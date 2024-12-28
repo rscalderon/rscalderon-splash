@@ -33,6 +33,14 @@ export default function Home() {
           >
             Resume
           </Link>
+          {' | '}
+          <Link
+            href='https://medium.com/@samourcalderon'
+            target='_blank'
+            className='hover:underline hover:underline-offset-4'
+          >
+            Medium
+          </Link>
         </section>
       </main>
       {/* <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
