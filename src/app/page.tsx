@@ -1,9 +1,41 @@
-import Image from "next/image";
+// import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
+    <div className='grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 py-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]'>
+      <main className='space-y-4'>
+        <h1 className='text-xl'>Welcome! I am Rodrigo S. Calderon</h1>
+        <p>
+          Welcome to v0 of my personal site. An exciting update is coming soon!
+        </p>
+        <section>
+          <Link
+            href='https://www.linkedin.com/in/rodrigosamourcalderon/'
+            target='_blank'
+            className='hover:underline hover:underline-offset-4'
+          >
+            LinkedIn
+          </Link>
+          {' | '}
+          <Link
+            href='https://www.github.com/rscalderon/'
+            target='_blank'
+            className='hover:underline hover:underline-offset-4'
+          >
+            GitHub
+          </Link>
+          {' | '}
+          <Link
+            href={`mailto:samourcalderon@gmail.com?subject=Resume Request | Looking for <Enter position>&body=Hi Rodrigo, I hope you're doing well! %0D%0A %0D%0A Please share your most updated resume. I'm looking for <role you're looking for>. %0D%0A %0D%0A All the best, %0D%0A %0D%0A <Your name here>`}
+            target='_blank'
+            className='hover:underline hover:underline-offset-4'
+          >
+            Resume
+          </Link>
+        </section>
+      </main>
+      {/* <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <Image
           className="dark:invert"
           src="/next.svg"
@@ -95,7 +127,7 @@ export default function Home() {
           />
           Go to nextjs.org →
         </a>
-      </footer>
+      </footer> */}
     </div>
   );
 }
