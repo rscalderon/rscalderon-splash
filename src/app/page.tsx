@@ -7,7 +7,7 @@ export default function Home() {
       <main className='space-y-4'>
         <h1 className='text-xl'>Welcome! I am Rodrigo S. Calderon</h1>
         <p>
-          Welcome to v0 of my personal site. An exciting update is coming soon!
+          This is v0 of my personal site. An exciting update is coming soon!
         </p>
         <section>
           <Link
