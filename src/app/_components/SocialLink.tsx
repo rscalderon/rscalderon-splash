@@ -9,7 +9,7 @@ type SocialLinkProps = {
 
 export default function SocialLink({
   href,
-  className = 'hover:underline hover:underline-offset-4',
+  className = 'hover:underline hover:underline-offset-4 hover:animate-pulse',
   children,
 }: SocialLinkProps) {
   return (
