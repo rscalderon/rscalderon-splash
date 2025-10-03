@@ -1,3 +1,4 @@
+import { socialEmailDraft } from '@/constants/emailTemplates';
 import SocialLink from './SocialLink';
 
 export default function SocialLinksSection() {
@@ -9,7 +10,7 @@ export default function SocialLinksSection() {
     { children: 'GitHub', href: 'https://www.github.com/rscalderon/' },
     {
       children: 'Resume',
-      href: "mailto:samourcalderon@gmail.com?subject=Resume Request | Looking for <Enter position>&body=Hi Rodrigo, I hope you're doing well! %0D%0A %0D%0A Please share your most updated resume. I'm looking for <role you're looking for>. %0D%0A %0D%0A All the best, %0D%0A %0D%0A <Your name here>",
+      href: socialEmailDraft,
     },
     { children: 'Medium', href: 'https://medium.com/@samourcalderon' },
   ] as const;
