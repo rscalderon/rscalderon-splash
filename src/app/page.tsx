@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div className='grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 py-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]'>
       <main className='space-y-4'>
-        <h1 className='text-xl'>Welcome! I&apos;m Rodrigo S. Calderon.</h1>
+        <h1 className='text-xl font-semibold'>Welcome! I&apos;m Rodrigo S. Calderon</h1>
         <section className='flex space-x-1 justify-center w-full'>
           <Link
             href='https://www.linkedin.com/in/rodrigosamourcalderon/'
