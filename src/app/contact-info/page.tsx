@@ -60,7 +60,7 @@ export default function Home() {
         </ol>
         <button
           type='button'
-          className='p-4 rounded-2xl self-center'
+          className='p-4 rounded-2xl self-center animate-pulse'
           onClick={downloadContactCard}
         >
           <p className=''>Download contact</p>
