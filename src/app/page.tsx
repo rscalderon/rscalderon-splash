@@ -26,14 +26,6 @@ export default function Home() {
           </Link>
           <p>{'|'}</p>
           <Link
-            href={`mailto:samourcalderon@gmail.com?subject=Resume Request | Looking for <Enter position>&body=Hi Rodrigo, I hope you're doing well! %0D%0A %0D%0A Please share your most updated resume. I'm looking for <role you're looking for>. %0D%0A %0D%0A All the best, %0D%0A %0D%0A <Your name here>`}
-            target='_blank'
-            className='hover:underline hover:underline-offset-4'
-          >
-            Resume
-          </Link>
-          <p>{'|'}</p>
-          <Link
             href='https://medium.com/@samourcalderon'
             target='_blank'
             className='hover:underline hover:underline-offset-4'
