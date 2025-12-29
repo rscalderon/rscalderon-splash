@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 // Force static generation - pages are pre-rendered at build time
 export const dynamic = 'force-static';
@@ -12,39 +13,34 @@ const contactInfo = [
   { label: 'LinkedIn:', value: 'rodrigosamourcalderon', url: 'https://www.linkedin.com/in/rodrigosamourcalderon' },
 ];
 
-function downloadContactCard() {
-  // Generate vCard (VCF) format
-  const vCard = [
-    'BEGIN:VCARD',
-    'VERSION:3.0',
-    `FN:Rodrigo Samour Calderon`,
-    `N:Samour Calderon;Rodrigo;;;`,
-    `TEL;TYPE=CELL:+1-510-990-5400`,
-    `EMAIL:samourcalderon@gmail.com`,
-    `URL:https://github.com/rscalderon`,
-    `URL:https://www.linkedin.com/in/rodrigosamourcalderon`,
-    'END:VCARD',
-  ].join('\n');
-
-  // Create a blob with the vCard content
-  const blob = new Blob([vCard], { type: 'text/vcard' });
-
-  // Create a temporary URL for the blob
-  const url = URL.createObjectURL(blob);
-
-  // Create a temporary anchor element and trigger download
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'Rodrigo_Samour_Calderon.vcf';
-  document.body.appendChild(link);
-  link.click();
-
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+const vCard = [
+  'BEGIN:VCARD',
+  'VERSION:3.0',
+  `FN:Rodrigo Samour Calderon`,
+  `N:Samour Calderon;Rodrigo;;;`,
+  `TEL;TYPE=CELL:+1-510-990-5400`,
+  `EMAIL:samourcalderon@gmail.com`,
+  `URL:https://github.com/rscalderon`,
+  `URL:https://www.linkedin.com/in/rodrigosamourcalderon`,
+  'END:VCARD',
+].join('\n');
 
 export default function Home() {
+  const [vCardUrl, setVCardUrl] = useState<string | null>(null);
+
+  // Generate vCard (VCF) format and create blob URL only on client side
+  useEffect(() => {
+    // Create a blob with the vCard content
+    const blob = new Blob([vCard], { type: 'text/vcard' });
+
+    // Create a temporary URL for the blob (only on client)
+    const url = URL.createObjectURL(blob);
+    setVCardUrl(url);
+
+    // Clean up the blob URL on unmount
+    return () => URL.revokeObjectURL(url);
+  }, []);
+
   return (
     <div className='flex flex-col items-center justify-center p-8 min-h-screen'>
       <main className='flex flex-col gap-4 row-start-2 items-center'>
@@ -63,13 +59,20 @@ export default function Home() {
             </li>
           ))}
         </ol>
-        <button
-          type='button'
-          className='m-8 p-4 rounded-full shadow bg-slate-100'
-          onClick={downloadContactCard}
+        <a
+          className={`m-8 p-4 rounded-full shadow bg-slate-100 text-semibold text-black inline-block ${!vCardUrl ? 'pointer-events-none opacity-50' : ''}`}
+          href={vCardUrl || '#'}
+          download='Rodrigo_Samour_Calderon.vcf'
+          target='_blank'
+          rel='noopener noreferrer'
+          onClick={(e) => {
+            if (!vCardUrl) {
+              e.preventDefault();
+            }
+          }}
         >
-          <p className='text-semibold text-black'>Download contact</p>
-        </button>
+          Download contact
+        </a>
       </main>
       <Link
         className='flex justify-center absolute bottom-8 text-xs gap-2 hover:underline hover:underline-offset-4 text-secondary'
