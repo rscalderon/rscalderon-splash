@@ -6,12 +6,10 @@ import Link from 'next/link';
 export const dynamic = 'force-static';
 
 const contactInfo = [
-  { label: 'First Name:', value: 'Rodrigo' },
-  { label: 'Last Names:', value: 'Samour Calderon' },
   { label: 'Phone:', value: '+1-510-990-5400' },
   { label: 'Email:', value: 'samourcalderon@gmail.com' },
-  { label: 'GitHub:', value: '@rscalderon' },
-  { label: 'LinkedIn:', value: 'rodrigosamourcalderon' },
+  { label: 'GitHub:', value: 'rscalderon', url: 'https://github.com/rscalderon' },
+  { label: 'LinkedIn:', value: 'rodrigosamourcalderon', url: 'https://www.linkedin.com/in/rodrigosamourcalderon' },
 ];
 
 function downloadContactCard() {
@@ -48,26 +46,33 @@ function downloadContactCard() {
 
 export default function Home() {
   return (
-    <div className='grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]'>
-      <main className='flex flex-col gap-8 row-start-2 items-center'>
-        <h1 className='text-2xl'>Contact info</h1>
-        <ol className='list-inside text-center sm:text-left font-[family-name:var(--font-geist-sans)]'>
-          {contactInfo.map(({ label, value }) => (
-            <li key={label} className='flex justify-between space-x-6'>
-              <p>{label}</p> <p>{value}</p>
+    <div className='flex flex-col items-center justify-center p-8 min-h-screen'>
+      <main className='flex flex-col gap-4 row-start-2 items-center'>
+        <h1 className='text-3xl font-semibold'>Rodrigo Samour Calderon</h1>
+        <ol className='flex w-full flex-col list-inside text-start sm:text-left'>
+          {contactInfo.map(({ label, value, url }) => (
+            <li key={label} className='flex justify-between space-x-1'>
+              <p className='font-semibold'>{label}</p>
+              {url ? (
+                <Link href={url} target='_blank' rel='noopener noreferrer' className='hover:underline'>
+                  {value}
+                </Link>
+              ) : (
+                <p>{value}</p>
+              )}
             </li>
           ))}
         </ol>
         <button
           type='button'
-          className='p-4 rounded-2xl self-center animate-pulse'
+          className='m-8 p-4 rounded-full shadow bg-slate-100'
           onClick={downloadContactCard}
         >
-          <p className=''>Download contact</p>
+          <p className='text-semibold text-black'>Download contact</p>
         </button>
       </main>
       <Link
-        className='flex row-start-3 text-xs items-center gap-2 hover:underline hover:underline-offset-4'
+        className='flex justify-center absolute bottom-8 text-xs gap-2 hover:underline hover:underline-offset-4 text-secondary'
         href='/'
       >
         Go to main page
