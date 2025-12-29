@@ -12,6 +12,9 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Force static generation - layout is pre-rendered at build time
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'Rodrigo S. Calderon',
   description: 'Welcome to my page!',
