@@ -48,7 +48,7 @@ export default function Home() {
         <ol className='flex w-full flex-col list-inside text-start sm:text-left'>
           {contactInfo.map(({ label, value, url }) => (
             <li key={label} className='flex justify-between space-x-1'>
-              <p className='font-semibold'>{label}</p>
+              <p className='font-medium'>{label}</p>
               {url ? (
                 <Link href={url} target='_blank' rel='noopener noreferrer' className='hover:underline'>
                   {value}
