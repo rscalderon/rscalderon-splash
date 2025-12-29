@@ -1,5 +1,8 @@
 import Link from 'next/link';
 
+// Force static generation - pages are pre-rendered at build time
+export const dynamic = 'force-static';
+
 const contactInfo = [
   { label: 'First Name:', value: 'Rodrigo' },
   { label: 'Last Names:', value: 'Samour Calderon' },
