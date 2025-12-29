@@ -1,3 +1,9 @@
 # Block /contact-info for all crawlers
 User-agent: *
 Disallow: /contact-info
+
+# Allow all other paths explicitly
+Allow: /
+
+# Sitemap location (Next.js will generate this automatically)
+Sitemap: https://yourdomain.com/sitemap.xml
