@@ -21,11 +21,12 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n
 
 /**
  * Convert a place's lat/lng into cobe rotation targets that bring it to the front
- * of the globe. Sign/orientation matches cobe's default projection and is verified
- * visually later. theta is clamped so the poles don't over-tilt the view.
+ * of the globe. Matches cobe's canonical `locationToAngles` mapping: phi carries a
+ * 1.5π offset so the front-facing meridian lines up with the marker's longitude.
+ * theta is clamped so the poles don't over-tilt the view.
  */
 export function focusAngles(place: Pick<Place, 'lat' | 'lng'>): FocusAngles {
-  const phi = -(place.lng * Math.PI) / 180;
-  const theta = clamp((place.lat * Math.PI) / 180, -0.8, 0.8);
+  const phi = (3 * Math.PI) / 2 - (place.lng * Math.PI) / 180;
+  const theta = clamp((place.lat * Math.PI) / 180, -1.3, 1.3);
   return { phi, theta };
 }
