@@ -53,13 +53,6 @@ describe('core commands', () => {
     expect(out).toEqual([]);
   });
 
-  it('exposes globe as a soon-flagged roadmap toy', () => {
-    for (const n of ['globe']) {
-      expect(byName(n).soon).toBe(true);
-      expect(byName(n).run(makeCtx(), []).length).toBeGreaterThan(0);
-    }
-  });
-
   it('game is live: opens /game in a new tab via ctx.open', () => {
     const open = vi.fn();
     const cmd = byName('game');
@@ -75,5 +68,12 @@ describe('core commands', () => {
     expect(enterAsk).toHaveBeenCalledOnce();
     expect(out).toEqual([]);
     expect(byName('ask').soon).toBeUndefined();
+  });
+
+  it('globe is a real command that links to /globe', () => {
+    const globe = byName('globe');
+    expect(globe.soon).toBeFalsy();
+    const segments = globe.run(makeCtx(), []).flat();
+    expect(segments.some((s) => s.href === '/globe' && s.tone === 'accent')).toBe(true);
   });
 });
