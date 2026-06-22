@@ -33,13 +33,10 @@ body {
 @keyframes rsc-blink {
   50% { opacity: 0; }
 }
-.animate-blink {
-  animation: rsc-blink 1.15s steps(1) infinite;
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .rsc-rise { opacity: 0; transform: translateY(9px); animation: rsc-rise 0.7s ease forwards; }
   .rsc-fade { opacity: 0; animation: rsc-fade 0.8s ease forwards; }
+  .animate-blink { animation: rsc-blink 1.15s steps(1) infinite; }
 }
 
 .rsc-underline::after {
