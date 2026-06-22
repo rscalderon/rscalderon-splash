@@ -112,7 +112,14 @@ function soonCmd(name: string, description: string, teaser: string): Command {
 }
 
 const globe = soonCmd('globe', "places I've been", "An interactive globe of where I've traveled and where I'm based.");
-const ask = soonCmd('ask', 'ask about me', 'A browser-based model answers questions about me, from a curated set.');
+const ask: Command = {
+  name: 'ask',
+  description: 'ask about me',
+  run: (ctx) => {
+    ctx.enterAsk();
+    return [];
+  },
+};
 const game = soonCmd('game', 'explore my work', 'Walk around a tiny planet and explore my portfolio.');
 
 export const coreCommands: Command[] = [
