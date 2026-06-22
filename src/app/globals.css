@@ -2,53 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .pause {
-    animation-play-state: paused;
-  }
-}
-@layer components {
-  .imagecarousel {
-    position: relative;
-    height: 100px;
-    margin-bottom: 30px;
-    display: flex;
-    width: fit-content;
-    gap: 100px;
-    animation: bannermove 50s linear infinite;
-  }
-  .imagecarousel img {
-    object-fit: scale-down;
-  }
-  .imagecarousel:hover {
-    animation-play-state: paused;
-  }
-}
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #fafaf9;
+  --fg: #1b1b19;
+  --muted: #8a8a82;
+  --line: #e6e6e1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --bg: #0b0b0c;
+  --fg: #ededed;
+  --muted: #83838a;
+  --line: #222226;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  transition: background 0.35s ease, color 0.35s ease;
 }
 
-@keyframes bannermove {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+/* Landing entrance + hint caret */
+@keyframes rsc-rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rsc-fade {
+  to { opacity: 1; }
+}
+@keyframes rsc-blink {
+  50% { opacity: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rsc-rise { opacity: 0; transform: translateY(9px); animation: rsc-rise 0.7s ease forwards; }
+  .rsc-fade { opacity: 0; animation: rsc-fade 0.8s ease forwards; }
+  .animate-blink { animation: rsc-blink 1.15s steps(1) infinite; }
+}
+
+.rsc-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--fg);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s ease;
+}
+.rsc-underline:hover::after {
+  transform: scaleX(1);
 }
