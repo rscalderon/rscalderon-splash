@@ -131,7 +131,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
           )}
 
           <div className="flex items-baseline">
-            <span className="shrink-0">
+            <span className="shrink-0 whitespace-pre">
               <span className="text-emerald-400">rsc</span>
               <span className="text-zinc-500">@</span>
               <span className="text-sky-400">~</span>
