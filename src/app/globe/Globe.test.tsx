@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import Globe from './Globe';
 
 const destroy = vi.fn();
-const createGlobe = vi.fn(() => ({ destroy }));
+const createGlobe = vi.fn((..._args: unknown[]) => ({ destroy }));
 vi.mock('cobe', () => ({ default: (...args: unknown[]) => createGlobe(...args) }));
 
 describe('Globe', () => {
