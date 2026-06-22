@@ -18,6 +18,8 @@ export type CommandContext = {
   getTheme: () => 'light' | 'dark';
   /** Clears the terminal output history. */
   clear: () => void;
+  /** Switches the terminal into interactive "ask-mode" (loads the browser model). */
+  enterAsk: () => void;
   links: { label: string; href: string; handle: string }[];
   /** Public command metadata, used by `help`. */
   commands: CommandMeta[];
