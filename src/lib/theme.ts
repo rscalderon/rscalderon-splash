@@ -17,6 +17,27 @@ export function applyTheme(t: Theme): void {
   document.documentElement.classList.toggle('dark', t === 'dark');
 }
 
+/**
+ * Client-only: keep the theme in sync with the OS color scheme while the user
+ * has no explicit override stored. An explicit choice (via the `theme` command)
+ * always wins. Returns a cleanup that removes the listener.
+ */
+export function watchSystemTheme(): () => void {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onChange = (e: MediaQueryListEvent) => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(THEME_KEY);
+    } catch {
+      /* storage unavailable — follow the system */
+    }
+    if (stored === 'light' || stored === 'dark') return; // explicit choice wins
+    applyTheme(e.matches ? 'dark' : 'light');
+  };
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+}
+
 export function persistTheme(t: Theme): void {
   try {
     localStorage.setItem(THEME_KEY, t);
