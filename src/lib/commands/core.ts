@@ -10,7 +10,7 @@ const about: Command = {
   description: 'who I am',
   run: () => [
     line('Rodrigo S. Calderon — Full-Stack AI Engineer, based in Miami.'),
-    line('[ replace with your real bio ]', 'dim'),
+    line('Experienced builder. Former management consultant at EY-Parthenon and Chief of Staff to CEOs.'),
   ],
 };
 
