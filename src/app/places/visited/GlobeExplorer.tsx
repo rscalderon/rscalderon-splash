@@ -8,9 +8,9 @@ import { prefersReducedMotion } from '@/lib/motion';
 
 const TALLY = getTally(PLACES);
 
-// Warm amber so home (Miami) reads distinct from the destination markers,
-// which fall back to the global markerColor. Starting value — tweak freely.
-const HOME_COLOR: [number, number, number] = [1.0, 0.55, 0.15];
+// Warm red so home (Miami) reads clearly distinct from the orange destination
+// markers (which fall back to the global markerColor) on both themes.
+const HOME_COLOR: [number, number, number] = [0.95, 0.2, 0.1];
 // The selected route pops against the faint global arcColor. Starting value.
 const SELECTED_ARC_COLOR: [number, number, number] = [1.0, 0.6, 0.2];
 
