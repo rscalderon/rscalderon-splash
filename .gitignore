@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# superpowers brainstorm scratch
+.superpowers/
+
+# agent-generated specs & plans — keep these local, don't commit
+docs/superpowers/
