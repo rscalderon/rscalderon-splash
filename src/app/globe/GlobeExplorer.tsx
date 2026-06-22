@@ -70,12 +70,13 @@ export default function GlobeExplorer() {
               <button
                 type="button"
                 aria-pressed={selected === i}
-                onClick={() => setSelected(i)}
+                onClick={() => setSelected((prev) => (prev === i ? null : i))}
                 className={`w-full text-left text-sm transition-colors ${
                   selected === i ? 'text-[var(--fg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'
                 }`}
               >
                 {p.city}
+                <span className="sr-only">, {p.country}</span>
                 {p.home && (
                   <span className="ml-1.5 text-[10px] uppercase tracking-wider text-[var(--muted)]">home</span>
                 )}

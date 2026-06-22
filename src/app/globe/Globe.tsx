@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { COBEOptions } from 'cobe';
+import type { Globe as CobeGlobe } from 'cobe';
 import { currentTheme } from '@/lib/theme';
 import { prefersReducedMotion } from '@/lib/motion';
 import type { FocusAngles } from '@/lib/travel';
@@ -33,9 +33,10 @@ export default function Globe({ markers, focus }: { markers: GlobeMarker[]; focu
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    let globe: { destroy: () => void; update?: (state: Partial<COBEOptions>) => void } | null = null;
+    let globe: CobeGlobe | null = null;
     let rafId = 0;
     let disposed = false;
+    let runId = 0;
     const reduce = prefersReducedMotion();
 
     const onResize = () => {
@@ -57,7 +58,7 @@ export default function Globe({ markers, focus }: { markers: GlobeMarker[]; focu
           phi.current += 0.004;
         }
       }
-      globe.update?.({
+      globe.update({
         phi: phi.current + pointerMovement.current / 200,
         theta: theta.current,
         width: width.current * 2,
@@ -66,9 +67,16 @@ export default function Globe({ markers, focus }: { markers: GlobeMarker[]; focu
       rafId = requestAnimationFrame(tick);
     };
 
+    // Cancellable so a theme flip mid-load can't spawn a second globe / rAF loop.
     const create = async () => {
+      const myRun = ++runId;
+      cancelAnimationFrame(rafId);
+      if (globe) {
+        globe.destroy();
+        globe = null;
+      }
       const createGlobe = (await import('cobe')).default;
-      if (disposed || !canvasRef.current) return;
+      if (disposed || myRun !== runId || !canvasRef.current) return;
       const c = COLORS[currentTheme()];
       globe = createGlobe(canvasRef.current, {
         devicePixelRatio: 2,
@@ -85,7 +93,7 @@ export default function Globe({ markers, focus }: { markers: GlobeMarker[]; focu
         glowColor: c.glowColor,
         markers,
       });
-      if (canvasRef.current) canvasRef.current.style.opacity = '1';
+      canvasRef.current.style.opacity = '1';
       rafId = requestAnimationFrame(tick);
     };
 
@@ -93,11 +101,6 @@ export default function Globe({ markers, focus }: { markers: GlobeMarker[]; focu
 
     // Re-skin when the theme (.dark class on <html>) flips — cobe has no live color setter.
     const observer = new MutationObserver(() => {
-      cancelAnimationFrame(rafId);
-      if (globe) {
-        globe.destroy();
-        globe = null;
-      }
       create();
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
