@@ -20,6 +20,8 @@ export type CommandContext = {
   clear: () => void;
   /** Switches the terminal into interactive "ask-mode" (loads the browser model). */
   enterAsk: () => void;
+  /** Opens a URL in a new browser tab. */
+  open: (url: string) => void;
   links: { label: string; href: string; handle: string }[];
   /** Public command metadata, used by `help`. */
   commands: CommandMeta[];
