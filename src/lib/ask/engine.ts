@@ -22,6 +22,28 @@ export type CreateOpts = {
   loadEmbedder?: (onProgress?: (pct: number) => void) => Promise<Embedder>;
 };
 
+/** Shape of the objects Transformers.js passes to `progress_callback`. */
+export type RawProgress = {
+  status?: string;
+  progress?: number;
+  loaded?: number;
+  total?: number;
+  file?: string;
+};
+
+/**
+ * Map a Transformers.js progress event to a display percentage (0–100), or null to ignore it.
+ *
+ * The library emits BOTH a per-file `progress` (0–100 for that single file) and an aggregate
+ * `progress_total` (0–100 across all files, with totals known up front). Honoring the per-file
+ * events is what made the bar lurch 0→100→0 as each file finished and the next began — so we
+ * track only the aggregate, which climbs smoothly and monotonically.
+ */
+export function readDownloadProgress(e: RawProgress): number | null {
+  if (e.status !== 'progress_total' || typeof e.progress !== 'number') return null;
+  return Math.max(0, Math.min(100, Math.round(e.progress)));
+}
+
 /** Real embedder: dynamically imports Transformers.js so it stays out of the landing bundle. */
 async function defaultLoadEmbedder(onProgress?: (pct: number) => void): Promise<Embedder> {
   const { pipeline, env } = await import('@huggingface/transformers');
@@ -29,8 +51,8 @@ async function defaultLoadEmbedder(onProgress?: (pct: number) => void): Promise<
   env.allowLocalModels = false;
   const extractor = await pipeline('feature-extraction', MODEL, {
     progress_callback: (p) => {
-      const pct = (p as { progress?: number }).progress;
-      if (onProgress && typeof pct === 'number') onProgress(Math.round(pct));
+      const pct = readDownloadProgress(p as RawProgress);
+      if (onProgress && pct !== null) onProgress(pct);
     },
   });
   return async (text: string) => {
