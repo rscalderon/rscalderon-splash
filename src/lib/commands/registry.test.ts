@@ -7,6 +7,7 @@ const ctx: CommandContext = {
   getTheme: () => 'light',
   clear: vi.fn(),
   enterAsk: vi.fn(),
+  open: vi.fn(),
   links: [],
   commands: [],
 };
