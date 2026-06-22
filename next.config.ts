@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Redirect the legacy /globe path to its new home so existing links survive.
+  async redirects() {
+    return [{ source: '/globe', destination: '/places/visited', permanent: true }];
+  },
   async headers() {
     return [
       {
