@@ -44,7 +44,8 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
   );
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
   }, []);
 
   useEffect(() => {
