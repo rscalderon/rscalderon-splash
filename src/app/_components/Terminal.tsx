@@ -69,33 +69,47 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<AskEngine | null>(null);
+  // Questions typed while the model is still loading — answered, in order, once ready.
+  const pendingRef = useRef<string[]>([]);
 
   const pushOutput = useCallback((...lines: Line[]) => {
     setHistory((h) => [...h, ...lines.map((line) => ({ kind: 'output' as const, line }))]);
   }, []);
 
-  const enterAsk = useCallback(async () => {
-    setMode('ask');
-    if (engineRef.current) {
-      setAskStatus('ready');
-      pushOutput([{ text: ASK_READY, tone: 'dim' }]);
-      return;
-    }
+  // Prefetch the model the moment the terminal opens — but never before (this
+  // component only mounts when the terminal is opened). By the time the user
+  // types `ask` the model is usually ready; if not, ask-mode shows the loading
+  // bar and keeps whatever they type.
+  useEffect(() => {
+    let cancelled = false;
     setAskStatus('loading');
     setLoadPct(0);
-    try {
-      const { createAskEngine } = await import('@/lib/ask/engine');
-      const engine = createAskEngine();
-      await engine.init((pct) => setLoadPct(pct));
-      engineRef.current = engine;
-      setAskStatus('ready');
-      pushOutput([{ text: ASK_READY, tone: 'dim' }]);
-    } catch {
-      setAskStatus('error');
-      setMode('command');
+    (async () => {
+      try {
+        const { createAskEngine } = await import('@/lib/ask/engine');
+        const engine = createAskEngine();
+        await engine.init((pct) => {
+          if (!cancelled) setLoadPct(pct);
+        });
+        if (cancelled) return;
+        engineRef.current = engine;
+        setAskStatus('ready');
+      } catch {
+        if (!cancelled) setAskStatus('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const enterAsk = useCallback(() => {
+    if (askStatus === 'error') {
       pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
+      return;
     }
-  }, [pushOutput]);
+    setMode('ask');
+  }, [askStatus, pushOutput]);
 
   const ctx: CommandContext = useMemo(
     () => ({
@@ -107,9 +121,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
         persistTheme(t);
       },
       clear: () => setHistory([]),
-      enterAsk: () => {
-        void enterAsk();
-      },
+      enterAsk: () => enterAsk(),
     }),
     [enterAsk],
   );
@@ -133,6 +145,27 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     [pushOutput],
   );
 
+  // When the engine settles while we're in ask-mode: show the ready hint, flush
+  // any questions kept during loading (in order), or surface a load error.
+  useEffect(() => {
+    if (mode !== 'ask') return;
+    if (askStatus === 'error') {
+      pendingRef.current = [];
+      setMode('command');
+      pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
+      return;
+    }
+    if (askStatus !== 'ready') return;
+    const queued = pendingRef.current;
+    pendingRef.current = [];
+    if (queued.length === 0) {
+      pushOutput([{ text: ASK_READY, tone: 'dim' }]);
+      return;
+    }
+    let chain = Promise.resolve();
+    for (const q of queued) chain = chain.then(() => runAsk(q));
+  }, [mode, askStatus, runAsk, pushOutput]);
+
   const submit = useCallback(() => {
     const raw = value;
     setValue('');
@@ -142,17 +175,23 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
       if (!trimmed) return;
       const lower = trimmed.toLowerCase();
       if (lower === 'exit' || lower === 'quit') {
+        pendingRef.current = [];
         setHistory((h) => [...h, { kind: 'input', text: raw, prompt: 'ask' }]);
         setMode('command');
         return;
       }
       if (lower === 'clear') {
+        pendingRef.current = [];
         setHistory([]);
         return;
       }
-      if (askStatus !== 'ready') return; // model still loading — ignore
+      // Always echo the question so it's visible immediately and never lost.
       setHistory((h) => [...h, { kind: 'input', text: raw, prompt: 'ask' }]);
-      void runAsk(trimmed);
+      if (askStatus === 'ready') {
+        void runAsk(trimmed);
+      } else {
+        pendingRef.current.push(trimmed); // model still loading — keep it for when it's ready
+      }
       return;
     }
 
@@ -224,7 +263,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
             ),
           )}
 
-          {askStatus === 'loading' && (
+          {mode === 'ask' && askStatus === 'loading' && (
             <div className="whitespace-pre-wrap break-words text-zinc-500">
               loading model… {loadPct}%
             </div>
@@ -257,6 +296,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
                     // Leave ask-mode instead of closing the whole terminal.
                     e.preventDefault();
                     e.nativeEvent.stopImmediatePropagation();
+                    pendingRef.current = [];
                     setMode('command');
                     return;
                   }

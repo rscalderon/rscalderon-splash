@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Terminal from './Terminal';
 
 // Mock the lazy ask-engine chunk: no model download in jsdom.
-const { askAnswer } = vi.hoisted(() => ({ askAnswer: vi.fn() }));
+// `askInit` is controllable so tests can hold the model in a "still loading" state.
+const { askAnswer, askInit } = vi.hoisted(() => ({
+  askAnswer: vi.fn(),
+  askInit: vi.fn(() => Promise.resolve()),
+}));
 vi.mock('@/lib/ask/engine', () => ({
   createAskEngine: () => ({
-    init: () => Promise.resolve(),
+    init: askInit,
     answer: askAnswer,
   }),
 }));
@@ -64,6 +68,33 @@ describe('Terminal', () => {
 describe('Terminal — ask mode', () => {
   beforeEach(() => {
     askAnswer.mockReset();
+    askInit.mockReset();
+    askInit.mockResolvedValue(undefined);
+  });
+
+  it('prefetches the model as soon as the terminal opens (before ask is typed)', async () => {
+    render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
+  });
+
+  it('keeps a question typed while the model is still loading and answers it once ready', async () => {
+    let resolveInit!: () => void;
+    askInit.mockImplementationOnce(() => new Promise<void>((r) => (resolveInit = r)));
+    askAnswer.mockResolvedValue({ kind: 'answer', text: 'Deferred answer.' });
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    const input = screen.getByRole('textbox');
+
+    await user.type(input, 'ask{Enter}'); // enter ask-mode while the model is still loading
+    expect(await screen.findByText(/loading model/i)).toBeInTheDocument();
+
+    await user.type(input, 'what do you do?{Enter}'); // typed mid-load — must be kept, not lost
+    expect(screen.getByText('what do you do?')).toBeInTheDocument(); // echoed immediately
+    expect(askAnswer).not.toHaveBeenCalled(); // not answered while still loading
+
+    resolveInit(); // model finishes loading
+    expect(await screen.findByText('Deferred answer.')).toBeInTheDocument();
+    expect(askAnswer).toHaveBeenCalledWith('what do you do?');
   });
 
   it('enters ask mode and shows the ready hint', async () => {
