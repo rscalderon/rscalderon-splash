@@ -7,8 +7,8 @@ import { useState, useEffect } from 'react';
 export const dynamic = 'force-static';
 
 const contactInfo = [
-  { label: 'Phone:', value: '+1-510-990-5400' },
-  { label: 'Email:', value: 'samourcalderon@gmail.com' },
+  { label: 'Phone:', value: '+1-786-519-4074' },
+  { label: 'Email:', value: 'carry_overage.8k@icloud.com' },
   { label: 'GitHub:', value: 'rscalderon', url: 'https://github.com/rscalderon' },
   { label: 'LinkedIn:', value: 'rodrigosamourcalderon', url: 'https://www.linkedin.com/in/rodrigosamourcalderon' },
 ];
@@ -18,8 +18,8 @@ const vCard = [
   'VERSION:3.0',
   `FN:Rodrigo Samour Calderon`,
   `N:Samour Calderon;Rodrigo;;;`,
-  `TEL;TYPE=CELL:+1-510-990-5400`,
-  `EMAIL:samourcalderon@gmail.com`,
+  `TEL;TYPE=CELL:+1-786-519-4074`,
+  `EMAIL:carry_overage.8k@icloud.com`,
   `URL:https://github.com/rscalderon`,
   `URL:https://www.linkedin.com/in/rodrigosamourcalderon`,
   'END:VCARD',
