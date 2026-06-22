@@ -44,22 +44,26 @@ export default function GlobeExplorer() {
 
   return (
     <main className="flex w-full max-w-[960px] flex-col items-center gap-10">
-      <h1 className="sr-only">Places I&apos;ve been</h1>
+      <header className="flex flex-col items-center gap-4">
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--fg)]">Where I&apos;ve traveled</h1>
 
-      <dl className="flex gap-10 text-center" aria-label="travel summary">
-        <div className="flex flex-col gap-1">
-          <dt className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Places</dt>
-          <dd className="text-2xl font-semibold tabular-nums">{places}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Countries</dt>
-          <dd className="text-2xl font-semibold tabular-nums">{countries}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Continents</dt>
-          <dd className="text-2xl font-semibold tabular-nums">{continents}</dd>
-        </div>
-      </dl>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">I&apos;ve been to</p>
+
+        <dl className="flex gap-10 text-center" aria-label="travel summary">
+          <div className="flex flex-col gap-1">
+            <dt className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Places</dt>
+            <dd className="text-2xl font-semibold tabular-nums">{places}</dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Countries</dt>
+            <dd className="text-2xl font-semibold tabular-nums">{countries}</dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Continents</dt>
+            <dd className="text-2xl font-semibold tabular-nums">{continents}</dd>
+          </div>
+        </dl>
+      </header>
 
       <div className="flex w-full flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
         <Globe markers={MARKERS} focus={focus} />
