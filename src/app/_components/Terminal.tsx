@@ -73,7 +73,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
         role="dialog"
         aria-modal="true"
         aria-label="Command terminal"
-        className="flex h-[min(440px,70vh)] w-[min(680px,92vw)] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-[#0b0b0e] shadow-2xl"
+        className="flex h-[min(440px,70vh)] w-[min(680px,92vw)] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-[#0b0b0e] text-left shadow-2xl"
       >
         <div className="flex items-center gap-2 border-b border-zinc-800 px-3 py-2.5">
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
