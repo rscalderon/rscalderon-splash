@@ -9,4 +9,5 @@ export const COMMAND_META: CommandMeta[] = coreCommands
   .map((c) => ({ name: c.name, description: c.description, soon: c.soon }));
 
 export { runCommand, parseInput } from './registry';
+export { suggestCompletion } from './suggest';
 export type { Command, CommandContext, Line, Segment, Tone, CommandMeta } from './types';
