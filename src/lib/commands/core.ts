@@ -120,7 +120,19 @@ const ask: Command = {
     return [];
   },
 };
-const game = soonCmd('game', 'explore my work', 'Walk around a tiny planet and explore my portfolio.');
+const game: Command = {
+  name: 'game',
+  description: 'explore my work',
+  run: (ctx) => {
+    ctx.open('/game');
+    return [
+      [
+        { text: 'Launching the planet in a new tab… if blocked, ', tone: 'dim' as Tone },
+        { text: 'open /game', href: '/game', tone: 'accent' as Tone },
+      ],
+    ];
+  },
+};
 
 export const coreCommands: Command[] = [
   help,
