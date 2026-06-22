@@ -111,7 +111,16 @@ function soonCmd(name: string, description: string, teaser: string): Command {
   };
 }
 
-const globe = soonCmd('globe', "places I've been", "An interactive globe of where I've traveled and where I'm based.");
+const globe: Command = {
+  name: 'globe',
+  description: "places I've been",
+  run: () => [
+    [
+      { text: "A globe of where I've been: " },
+      { text: '/globe', href: '/globe', tone: 'accent' },
+    ],
+  ],
+};
 const ask: Command = {
   name: 'ask',
   description: 'ask about me',
