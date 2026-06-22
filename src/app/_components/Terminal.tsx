@@ -55,7 +55,6 @@ function PromptInner({ mode }: { mode: Mode }) {
 
 export default function Terminal({ onClose, seed = '' }: { onClose: () => void; seed?: string }) {
   const [history, setHistory] = useState<HistoryEntry[]>([
-    { kind: 'output', line: [{ text: 'Welcome. This page is also a terminal.', tone: 'dim' }] },
     { kind: 'output', line: [{ text: "Type 'help' to see what it can do.", tone: 'dim' }] },
   ]);
   const [value, setValue] = useState(seed);
