@@ -6,12 +6,15 @@ import {
   REGISTRY,
   COMMAND_META,
   runCommand,
+  suggestCompletion,
   type CommandContext,
   type Line,
 } from '@/lib/commands';
 import { applyTheme, persistTheme, currentTheme } from '@/lib/theme';
 
 type HistoryEntry = { kind: 'input'; text: string } | { kind: 'output'; line: Line };
+
+const COMMAND_NAMES = COMMAND_META.map((c) => c.name);
 
 const toneClass: Record<string, string> = {
   normal: 'text-zinc-200',
@@ -26,6 +29,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     { kind: 'output', line: [{ text: "Type 'help' to see what it can do.", tone: 'dim' }] },
   ]);
   const [value, setValue] = useState(seed);
+  const suggestion = useMemo(() => suggestCompletion(value, COMMAND_NAMES), [value]);
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -133,19 +137,45 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
               <span className="text-sky-400">~</span>
               <span className="text-zinc-500">$ </span>
             </span>
-            <input
-              ref={inputRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submit();
-              }}
-              className="flex-1 border-none bg-transparent font-mono text-zinc-200 caret-emerald-400 outline-none"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              aria-label="Terminal input"
-            />
+            <div className="relative flex-1">
+              {suggestion && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre font-mono text-[13.5px] leading-relaxed"
+                >
+                  <span className="text-transparent">{value}</span>
+                  <span className="text-zinc-600">{suggestion}</span>
+                </div>
+              )}
+              <input
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    submit();
+                    return;
+                  }
+                  if (!suggestion) return;
+                  // Accept the ghost completion: Tab anywhere, or ArrowRight at line end.
+                  if (e.key === 'Tab') {
+                    e.preventDefault();
+                    setValue(value + suggestion);
+                  } else if (e.key === 'ArrowRight') {
+                    const el = e.currentTarget;
+                    if (el.selectionStart === value.length && el.selectionEnd === value.length) {
+                      e.preventDefault();
+                      setValue(value + suggestion);
+                    }
+                  }
+                }}
+                className="relative w-full border-none bg-transparent p-0 font-mono text-[13.5px] leading-relaxed text-zinc-200 caret-emerald-400 outline-none"
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-label="Terminal input"
+              />
+            </div>
           </div>
         </div>
       </div>
