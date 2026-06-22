@@ -28,14 +28,18 @@ describe('travel data', () => {
     expect(PLACES.find((p) => p.home)?.city).toBe('Miami');
   });
 
-  it('maps lat/lng 0,0 to ~0 rotation', () => {
+  it('faces lat/lng 0,0 with cobe’s 1.5π front-meridian offset', () => {
     const a = focusAngles({ lat: 0, lng: 0 });
-    expect(a.phi).toBeCloseTo(0, 5);
+    expect(a.phi).toBeCloseTo((3 * Math.PI) / 2, 5);
     expect(a.theta).toBeCloseTo(0, 5);
   });
 
-  it('rotates for longitude and clamps theta near the poles', () => {
-    expect(focusAngles({ lat: 0, lng: 90 }).phi).toBeCloseTo(-Math.PI / 2, 5);
-    expect(focusAngles({ lat: 89, lng: 0 }).theta).toBe(0.8);
+  it('shifts phi by longitude and clamps theta near the poles', () => {
+    // 90°E rotates phi a quarter-turn off the front meridian
+    expect(focusAngles({ lat: 0, lng: 90 }).phi).toBeCloseTo((3 * Math.PI) / 2 - Math.PI / 2, 5);
+    // latitude maps straight through to theta...
+    expect(focusAngles({ lat: 40, lng: 0 }).theta).toBeCloseTo((40 * Math.PI) / 180, 5);
+    // ...but is clamped so extreme latitudes don't over-tilt the view
+    expect(focusAngles({ lat: 89, lng: 0 }).theta).toBe(1.3);
   });
 });
