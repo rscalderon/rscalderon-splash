@@ -4,7 +4,9 @@ import sitemap from './sitemap';
 describe('sitemap', () => {
   it('lists home, contact-info, and globe', () => {
     const urls = sitemap().map((e) => e.url);
+    expect(urls).toHaveLength(3);
     expect(urls.some((u) => u.endsWith('/contact-info'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/globe'))).toBe(true);
+    expect(urls.some((u) => !u.endsWith('/contact-info') && !u.endsWith('/globe'))).toBe(true);
   });
 });
