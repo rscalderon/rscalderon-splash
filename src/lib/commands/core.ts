@@ -111,13 +111,13 @@ function soonCmd(name: string, description: string, teaser: string): Command {
   };
 }
 
-const globe: Command = {
-  name: 'globe',
-  description: "places I've been",
+const travel: Command = {
+  name: 'travel',
+  description: "places I've visited",
   run: () => [
     [
-      { text: "A globe of where I've been: " },
-      { text: '/globe', href: '/globe', tone: 'accent' },
+      { text: "Where I've traveled: " },
+      { text: '/places/visited', href: '/places/visited', tone: 'accent' },
     ],
   ],
 };
@@ -151,7 +151,7 @@ export const coreCommands: Command[] = [
   contact,
   theme,
   clear,
-  globe,
+  travel,
   ask,
   game,
 ];

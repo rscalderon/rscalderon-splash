@@ -36,7 +36,7 @@ describe('core commands', () => {
     const text = byName('help').run(makeCtx(), []).flat().map((s) => s.text).join('\n');
     expect(text).toContain('about');
     expect(text).toContain('coming soon');
-    expect(text).toContain('globe');
+    expect(text).toContain('travel');
   });
 
   it('theme toggles via ctx and reports the new theme', () => {
@@ -70,10 +70,11 @@ describe('core commands', () => {
     expect(byName('ask').soon).toBeUndefined();
   });
 
-  it('globe is a real command that links to /globe', () => {
-    const globe = byName('globe');
-    expect(globe.soon).toBeFalsy();
-    const segments = globe.run(makeCtx(), []).flat();
-    expect(segments.some((s) => s.href === '/globe' && s.tone === 'accent')).toBe(true);
+  it('travel is a real command that links to /places/visited', () => {
+    const travel = byName('travel');
+    expect(travel.soon).toBeFalsy();
+    expect(travel.description).toBe("places I've visited");
+    const segments = travel.run(makeCtx(), []).flat();
+    expect(segments.some((s) => s.href === '/places/visited' && s.tone === 'accent')).toBe(true);
   });
 });

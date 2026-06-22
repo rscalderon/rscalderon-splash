@@ -5,8 +5,8 @@ import GlobeExplorer from './GlobeExplorer';
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
-  title: 'Globe — Rodrigo S. Calderon',
-  description: "An interactive globe of the places I've been and where I'm based.",
+  title: "Where I've traveled — Rodrigo S. Calderon",
+  description: "An interactive globe of the places I've traveled to, and where I'm based.",
 };
 
 export default function GlobePage() {
