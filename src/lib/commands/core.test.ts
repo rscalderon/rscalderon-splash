@@ -14,6 +14,7 @@ function makeCtx(over: Partial<CommandContext> = {}): CommandContext {
     getTheme: () => 'light',
     clear: vi.fn(),
     enterAsk: vi.fn(),
+    open: vi.fn(),
     links: [{ label: 'GitHub', href: 'https://github.com/rscalderon', handle: 'github.com/rscalderon' }],
     commands: coreCommands.map((c) => ({ name: c.name, description: c.description, soon: c.soon })),
     ...over,
@@ -52,11 +53,20 @@ describe('core commands', () => {
     expect(out).toEqual([]);
   });
 
-  it('exposes globe and game as soon-flagged roadmap toys', () => {
-    for (const n of ['globe', 'game']) {
+  it('exposes globe as a soon-flagged roadmap toy', () => {
+    for (const n of ['globe']) {
       expect(byName(n).soon).toBe(true);
       expect(byName(n).run(makeCtx(), []).length).toBeGreaterThan(0);
     }
+  });
+
+  it('game is live: opens /game in a new tab via ctx.open', () => {
+    const open = vi.fn();
+    const cmd = byName('game');
+    const out = cmd.run(makeCtx({ open }), []);
+    expect(cmd.soon).toBeFalsy();
+    expect(open).toHaveBeenCalledWith('/game');
+    expect(out.flat().some((s) => s.href === '/game')).toBe(true);
   });
 
   it('ask is a real command that enters ask-mode via ctx.enterAsk and prints nothing', () => {

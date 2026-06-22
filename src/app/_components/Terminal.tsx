@@ -122,6 +122,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
       },
       clear: () => setHistory([]),
       enterAsk: () => enterAsk(),
+      open: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
     }),
     [enterAsk],
   );
