@@ -41,3 +41,19 @@ body {
   .rsc-rise { opacity: 0; transform: translateY(9px); animation: rsc-rise 0.7s ease forwards; }
   .rsc-fade { opacity: 0; animation: rsc-fade 0.8s ease forwards; }
 }
+
+.rsc-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--fg);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s ease;
+}
+.rsc-underline:hover::after {
+  transform: scaleX(1);
+}
