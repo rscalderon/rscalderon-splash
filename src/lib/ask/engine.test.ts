@@ -21,7 +21,8 @@ const entries: Entry[] = [
 ];
 
 function makeEngine() {
-  return createAskEngine({ entries, threshold: 0.45, loadEmbedder: async () => fakeEmbedder() });
+  // intents: [] isolates the knowledge path for these assertions.
+  return createAskEngine({ entries, intents: [], threshold: 0.45, loadEmbedder: async () => fakeEmbedder() });
 }
 
 describe('ask engine', () => {
@@ -43,6 +44,21 @@ describe('ask engine', () => {
     expect(await engine.answer('cat')).toEqual({ kind: 'nomatch' }); // not initialized yet
     await engine.init();
     expect(await engine.answer('   ')).toEqual({ kind: 'nomatch' });
+  });
+
+  it('routes free text to a command when an intent out-ranks every entry', async () => {
+    // Only the cat entry exists in the knowledge pool, so a 'dog'-flavored query
+    // resolves to the command intent rather than any curated answer.
+    const engine = createAskEngine({
+      entries: [{ id: 'cat', questions: ['tell me about the cat'], answer: 'Meow.' }],
+      intents: [{ command: 'game', phrases: ['go find the dog'] }],
+      threshold: 0.45,
+      loadEmbedder: async () => fakeEmbedder(),
+    });
+    await engine.init();
+    expect(await engine.answer('where is the dog')).toEqual({ kind: 'command', command: 'game' });
+    // A cat-flavored query still prefers the curated answer.
+    expect(await engine.answer('about the cat')).toEqual({ kind: 'answer', text: 'Meow.' });
   });
 });
 

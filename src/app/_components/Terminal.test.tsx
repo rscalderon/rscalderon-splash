@@ -57,11 +57,64 @@ describe('Terminal', () => {
   });
 
   it('submits the typed text on Enter without auto-accepting the suggestion', async () => {
+    // Hold the model in loading so the unknown token takes the classic
+    // command-not-found path (no router) — this isolates the suggestion behavior.
+    askInit.mockImplementationOnce(() => new Promise<void>(() => {}));
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
     const input = screen.getByRole('textbox');
     await user.type(input, 'ab{Enter}'); // "ab" suggests "about", but Enter runs "ab"
     expect(await screen.findByText(/command not found: ab/i)).toBeInTheDocument();
+  });
+});
+
+describe('Terminal — smart command fallback', () => {
+  beforeEach(() => {
+    askAnswer.mockReset();
+    askInit.mockReset();
+    askInit.mockResolvedValue(undefined);
+  });
+
+  // Bounce through ask-mode to deterministically wait until the model is ready,
+  // then return to command mode where the fallback router is active.
+  async function readyInCommandMode(user: ReturnType<typeof userEvent.setup>) {
+    const input = screen.getByRole('textbox');
+    await user.type(input, 'ask{Enter}');
+    await screen.findByText(/ask me anything/i);
+    await user.type(input, 'exit{Enter}');
+    return input;
+  }
+
+  it('answers unknown free text from the knowledge base', async () => {
+    askAnswer.mockResolvedValue({ kind: 'answer', text: 'Routed from the knowledge base.' });
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    const input = await readyInCommandMode(user);
+    await user.type(input, 'what is your tech stack{Enter}');
+    expect(await screen.findByText('Routed from the knowledge base.')).toBeInTheDocument();
+    expect(askAnswer).toHaveBeenCalledWith('what is your tech stack');
+  });
+
+  it('offers a routed command and runs it on a bare Enter', async () => {
+    askAnswer.mockResolvedValue({ kind: 'command', command: 'about' });
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    const input = await readyInCommandMode(user);
+    await user.type(input, 'tell me who you are{Enter}'); // unknown → routed to an offer
+    expect(await screen.findByText(/looks like you want/i)).toBeInTheDocument();
+    await user.type(input, '{Enter}'); // bare ↵ confirms → runs `about`
+    expect(await screen.findByText(/Full-Stack AI Engineer/i)).toBeInTheDocument();
+  });
+
+  it('dismisses a routed offer when the user keeps typing instead', async () => {
+    askAnswer.mockResolvedValue({ kind: 'command', command: 'about' });
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    const input = await readyInCommandMode(user);
+    await user.type(input, 'show me something{Enter}');
+    await screen.findByText(/looks like you want/i);
+    await user.type(input, 'help{Enter}'); // typing past the offer dismisses it and runs help
+    expect(await screen.findByText(/wipe the screen/i)).toBeInTheDocument(); // help listing
   });
 });
 

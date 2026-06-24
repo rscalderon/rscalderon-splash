@@ -1,9 +1,13 @@
 import { knowledge, MATCH_THRESHOLD, type Entry } from './knowledge';
+import { commandIntents, type CommandIntent } from './intents';
 import { matchEntry, type IndexItem } from './match';
 
 const MODEL = 'Xenova/all-MiniLM-L6-v2';
 
-export type AskResult = { kind: 'answer'; text: string } | { kind: 'nomatch' };
+export type AskResult =
+  | { kind: 'answer'; text: string }
+  | { kind: 'command'; command: string }
+  | { kind: 'nomatch' };
 
 /** Turns text into a normalized embedding vector. */
 export type Embedder = (text: string) => Promise<Float32Array>;
@@ -17,6 +21,8 @@ export interface AskEngine {
 
 export type CreateOpts = {
   entries?: Entry[];
+  /** Natural-language → command routes folded into the same index. */
+  intents?: CommandIntent[];
   threshold?: number;
   /** Override for tests; defaults to the real Transformers.js embedder (lazy-loaded). */
   loadEmbedder?: (onProgress?: (pct: number) => void) => Promise<Embedder>;
@@ -63,9 +69,16 @@ async function defaultLoadEmbedder(onProgress?: (pct: number) => void): Promise<
 
 export function createAskEngine(opts: CreateOpts = {}): AskEngine {
   const entries = opts.entries ?? knowledge;
+  const intents = opts.intents ?? commandIntents;
   const threshold = opts.threshold ?? MATCH_THRESHOLD;
   const loadEmbedder = opts.loadEmbedder ?? defaultLoadEmbedder;
-  const byId = new Map(entries.map((e) => [e.id, e]));
+
+  // One id → result map across both pools. Command ids are namespaced (`cmd:…`)
+  // so they can never collide with a knowledge entry id.
+  const results = new Map<string, AskResult>();
+  for (const e of entries) results.set(e.id, { kind: 'answer', text: e.answer });
+  for (const i of intents) results.set(`cmd:${i.command}`, { kind: 'command', command: i.command });
+
   const index: IndexItem[] = [];
   let embed: Embedder | null = null;
 
@@ -77,13 +90,17 @@ export function createAskEngine(opts: CreateOpts = {}): AskEngine {
           index.push({ entryId: entry.id, vec: await embed(q) });
         }
       }
+      for (const intent of intents) {
+        for (const phrase of intent.phrases) {
+          index.push({ entryId: `cmd:${intent.command}`, vec: await embed(phrase) });
+        }
+      }
     },
     async answer(question) {
       const text = question.trim();
       if (!text || !embed) return { kind: 'nomatch' };
       const id = matchEntry(await embed(text), index, threshold);
-      const entry = id ? byId.get(id) : undefined;
-      return entry ? { kind: 'answer', text: entry.answer } : { kind: 'nomatch' };
+      return (id && results.get(id)) || { kind: 'nomatch' };
     },
   };
 }

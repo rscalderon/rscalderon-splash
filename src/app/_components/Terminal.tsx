@@ -6,12 +6,13 @@ import {
   REGISTRY,
   COMMAND_META,
   runCommand,
+  parseInput,
   suggestCompletion,
   type CommandContext,
   type Line,
 } from '@/lib/commands';
 import { applyTheme, persistTheme, currentTheme } from '@/lib/theme';
-import type { AskEngine } from '@/lib/ask/engine';
+import type { AskEngine, AskResult } from '@/lib/ask/engine';
 
 type Mode = 'command' | 'ask';
 type HistoryEntry =
@@ -55,12 +56,17 @@ function PromptInner({ mode }: { mode: Mode }) {
 
 export default function Terminal({ onClose, seed = '' }: { onClose: () => void; seed?: string }) {
   const [history, setHistory] = useState<HistoryEntry[]>([
-    { kind: 'output', line: [{ text: "Type 'help' to see what it can do.", tone: 'dim' }] },
+    {
+      kind: 'output',
+      line: [{ text: "Type 'help' for commands — or just ask in plain English.", tone: 'dim' }],
+    },
   ]);
   const [value, setValue] = useState(seed);
   const [mode, setMode] = useState<Mode>('command');
   const [askStatus, setAskStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [loadPct, setLoadPct] = useState(0);
+  // A command the router guessed from free text, awaiting a bare ↵ to confirm.
+  const [pending, setPending] = useState<string | null>(null);
   const suggestion = useMemo(
     () => (mode === 'command' ? suggestCompletion(value, COMMAND_NAMES) : null),
     [value, mode],
@@ -135,14 +141,48 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
   }, [history, askStatus, loadPct]);
 
+  // Offer (don't auto-run) a router-guessed command, so a fuzzy match never
+  // silently fires a side effect. A bare ↵ on the next line confirms it.
+  const offerCommand = useCallback(
+    (name: string) => {
+      setPending(name);
+      const meta = COMMAND_META.find((c) => c.name === name);
+      pushOutput([
+        { text: 'looks like you want ', tone: 'dim' },
+        { text: name, tone: 'accent' },
+        { text: meta ? ` — ${meta.description}.` : '.', tone: 'dim' },
+        { text: '  press ↵ to run, or keep typing.', tone: 'dim' },
+      ]);
+    },
+    [pushOutput],
+  );
+
+  const present = useCallback(
+    (res: AskResult) => {
+      if (res.kind === 'answer') pushOutput([{ text: res.text }]);
+      else if (res.kind === 'command') offerCommand(res.command);
+      else pushOutput([{ text: ASK_NOMATCH, tone: 'dim' }]);
+    },
+    [pushOutput, offerCommand],
+  );
+
   const runAsk = useCallback(
     async (question: string) => {
       const engine = engineRef.current;
       if (!engine) return;
-      const res = await engine.answer(question);
-      pushOutput(res.kind === 'answer' ? [{ text: res.text }] : [{ text: ASK_NOMATCH, tone: 'dim' }]);
+      present(await engine.answer(question));
     },
-    [pushOutput],
+    [present],
+  );
+
+  // Echo and run a command by name (used when the user confirms a router guess).
+  const runByName = useCallback(
+    (name: string) => {
+      setHistory((h) => [...h, { kind: 'input', text: name }]);
+      const out = runCommand(REGISTRY, name, ctx);
+      if (out.length) pushOutput(...out);
+    },
+    [pushOutput, ctx],
   );
 
   // When the engine settles while we're in ask-mode: show the ready hint, flush
@@ -170,6 +210,17 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     const raw = value;
     setValue('');
 
+    // A router guess is on offer: a bare ↵ confirms it; anything else dismisses
+    // it and falls through to be handled normally.
+    if (pending) {
+      const name = pending;
+      setPending(null);
+      if (!raw.trim()) {
+        runByName(name);
+        return;
+      }
+    }
+
     if (mode === 'ask') {
       const trimmed = raw.trim();
       if (!trimmed) return;
@@ -195,12 +246,27 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
       return;
     }
 
+    const { name } = parseInput(raw);
+    if (!name) return; // bare ↵ in command mode — no echo, no output
     setHistory((h) => [...h, { kind: 'input', text: raw }]);
-    const out = runCommand(REGISTRY, raw, ctx);
-    if (out.length) {
-      setHistory((h) => [...h, ...out.map((line) => ({ kind: 'output' as const, line }))]);
+
+    // Known command → run it (exact name always wins over the router).
+    if (REGISTRY.has(name)) {
+      const out = runCommand(REGISTRY, raw, ctx);
+      if (out.length) {
+        setHistory((h) => [...h, ...out.map((line) => ({ kind: 'output' as const, line }))]);
+      }
+      return;
     }
-  }, [value, mode, askStatus, ctx, runAsk]);
+
+    // Unknown command → smart fallback: let the model route free text to an
+    // answer or a command. While it's still loading, keep the classic message.
+    if (askStatus === 'ready' && engineRef.current) {
+      void runAsk(raw);
+    } else {
+      pushOutput([{ text: `command not found: ${name} — try 'help'`, tone: 'dim' }]);
+    }
+  }, [value, mode, askStatus, pending, ctx, runAsk, runByName, pushOutput]);
 
   return (
     <div
