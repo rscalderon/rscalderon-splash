@@ -13,7 +13,6 @@ function makeCtx(over: Partial<CommandContext> = {}): CommandContext {
     setTheme: vi.fn(),
     getTheme: () => 'light',
     clear: vi.fn(),
-    enterAsk: vi.fn(),
     open: vi.fn(),
     links: [{ label: 'GitHub', href: 'https://github.com/rscalderon', handle: 'github.com/rscalderon' }],
     commands: coreCommands.map((c) => ({ name: c.name, description: c.description, soon: c.soon })),
@@ -32,11 +31,12 @@ describe('core commands', () => {
     expect(flat.some((s) => s.href === 'https://github.com/rscalderon')).toBe(true);
   });
 
-  it('help lists the live commands', () => {
+  it('help lists the live commands but not the removed ask command', () => {
     const text = byName('help').run(makeCtx(), []).flat().map((s) => s.text).join('\n');
     expect(text).toContain('about');
     expect(text).toContain('travel');
     expect(text).toContain('game');
+    expect(text).not.toContain('ask');
   });
 
   it('theme toggles via ctx and reports the new theme', () => {
@@ -62,12 +62,8 @@ describe('core commands', () => {
     expect(out.flat().some((s) => s.href === '/game')).toBe(true);
   });
 
-  it('ask is a real command that enters ask-mode via ctx.enterAsk and prints nothing', () => {
-    const enterAsk = vi.fn();
-    const out = byName('ask').run(makeCtx({ enterAsk }), []);
-    expect(enterAsk).toHaveBeenCalledOnce();
-    expect(out).toEqual([]);
-    expect(byName('ask').soon).toBeUndefined();
+  it('no longer registers the ask command (ask-as-default replaced it)', () => {
+    expect(coreCommands.some((c) => c.name === 'ask')).toBe(false);
   });
 
   it('travel is a real command that links to /places/visited', () => {
