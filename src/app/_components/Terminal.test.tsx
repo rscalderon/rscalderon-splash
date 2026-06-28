@@ -17,6 +17,12 @@ vi.mock('@/lib/ask/engine', () => ({
 }));
 
 describe('Terminal', () => {
+  beforeEach(() => {
+    askAnswer.mockReset();
+    askInit.mockReset();
+    askInit.mockResolvedValue(undefined);
+  });
+
   it('runs a command on Enter and shows output', async () => {
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
@@ -57,61 +63,38 @@ describe('Terminal', () => {
   });
 
   it('submits the typed text on Enter without auto-accepting the suggestion', async () => {
+    // "ab" suggests "about", but Enter must submit "ab" verbatim (free text),
+    // not the completed command — so it routes through the fallback, not `about`.
+    askAnswer.mockResolvedValue({ kind: 'nomatch' });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
     const input = screen.getByRole('textbox');
-    await user.type(input, 'ab{Enter}'); // "ab" suggests "about", but Enter runs "ab"
-    expect(await screen.findByText(/command not found: ab/i)).toBeInTheDocument();
+    await user.type(input, 'ab{Enter}');
+    expect(await screen.findByText(/I don't have a curated answer for that/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Full-Stack AI Engineer/i)).not.toBeInTheDocument(); // not "about"
+    expect(askAnswer).toHaveBeenCalledWith('ab');
   });
 });
 
-describe('Terminal — ask mode', () => {
+describe('Terminal — smart fallback (ask-as-default)', () => {
   beforeEach(() => {
     askAnswer.mockReset();
     askInit.mockReset();
     askInit.mockResolvedValue(undefined);
   });
 
-  it('prefetches the model as soon as the terminal opens (before ask is typed)', async () => {
+  it('prefetches the model as soon as the terminal opens', async () => {
     render(<Terminal onClose={vi.fn()} />);
     await waitFor(() => expect(askInit).toHaveBeenCalled());
   });
 
-  it('keeps a question typed while the model is still loading and answers it once ready', async () => {
-    let resolveInit!: () => void;
-    askInit.mockImplementationOnce(() => new Promise<void>((r) => (resolveInit = r)));
-    askAnswer.mockResolvedValue({ kind: 'answer', text: 'Deferred answer.' });
-    const user = userEvent.setup();
-    render(<Terminal onClose={vi.fn()} />);
-    const input = screen.getByRole('textbox');
-
-    await user.type(input, 'ask{Enter}'); // enter ask-mode while the model is still loading
-    expect(await screen.findByText(/loading model/i)).toBeInTheDocument();
-
-    await user.type(input, 'what do you do?{Enter}'); // typed mid-load — must be kept, not lost
-    expect(screen.getByText('what do you do?')).toBeInTheDocument(); // echoed immediately
-    expect(askAnswer).not.toHaveBeenCalled(); // not answered while still loading
-
-    resolveInit(); // model finishes loading
-    expect(await screen.findByText('Deferred answer.')).toBeInTheDocument();
-    expect(askAnswer).toHaveBeenCalledWith('what do you do?');
-  });
-
-  it('enters ask mode and shows the ready hint', async () => {
-    const user = userEvent.setup();
-    render(<Terminal onClose={vi.fn()} />);
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'ask{Enter}');
-    expect(await screen.findByText(/ask me anything about Rodrigo/i)).toBeInTheDocument();
-  });
-
-  it('answers a question via the engine', async () => {
+  it('answers plain-English input once the model is ready', async () => {
     askAnswer.mockResolvedValue({ kind: 'answer', text: 'I build AI products end to end.' });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
     const input = screen.getByRole('textbox');
-    await user.type(input, 'ask{Enter}');
-    await screen.findByText(/ask me anything/i);
     await user.type(input, 'what is your background?{Enter}');
     expect(await screen.findByText('I build AI products end to end.')).toBeInTheDocument();
     expect(askAnswer).toHaveBeenCalledWith('what is your background?');
@@ -121,42 +104,69 @@ describe('Terminal — ask mode', () => {
     askAnswer.mockResolvedValue({ kind: 'nomatch' });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
     const input = screen.getByRole('textbox');
-    await user.type(input, 'ask{Enter}');
-    await screen.findByText(/ask me anything/i);
     await user.type(input, 'what is the meaning of life?{Enter}');
     expect(await screen.findByText(/I don't have a curated answer for that/i)).toBeInTheDocument();
   });
 
-  it("exits ask mode with 'exit' so commands run again", async () => {
+  // THE BUG WE FIXED: cold window — free text typed before the model is ready
+  // must be echoed and kept (NOT "command not found"), then answered once ready.
+  it('keeps plain English typed before the model is ready and answers it once ready', async () => {
+    let resolveInit!: () => void;
+    askInit.mockImplementationOnce(() => new Promise<void>((r) => (resolveInit = r)));
+    askAnswer.mockResolvedValue({ kind: 'answer', text: 'Deferred answer.' });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
     const input = screen.getByRole('textbox');
-    await user.type(input, 'ask{Enter}');
-    await screen.findByText(/ask me anything/i);
-    await user.type(input, 'exit{Enter}');
-    await user.type(input, 'about{Enter}');
+
+    await user.type(input, 'what do you do?{Enter}'); // typed mid-load — must be kept, not lost
+    expect(screen.getByText('what do you do?')).toBeInTheDocument(); // echoed immediately
+    expect(screen.getByText(/loading model/i)).toBeInTheDocument(); // reads as "thinking"
+    expect(screen.queryByText(/command not found/i)).not.toBeInTheDocument(); // never a dead end
+    expect(askAnswer).not.toHaveBeenCalled(); // not answered while still loading
+
+    resolveInit(); // model finishes loading
+    expect(await screen.findByText('Deferred answer.')).toBeInTheDocument();
+    expect(askAnswer).toHaveBeenCalledWith('what do you do?');
+  });
+
+  it('offers a routed command and runs it on a bare Enter', async () => {
+    askAnswer.mockResolvedValue({ kind: 'command', command: 'about' });
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
+    const input = screen.getByRole('textbox');
+    await user.type(input, 'tell me who you are{Enter}');
+    expect(await screen.findByText(/looks like you want/i)).toBeInTheDocument();
+
+    await user.type(input, '{Enter}'); // bare ↵ confirms the guess → runs `about`
     expect(await screen.findByText(/Full-Stack AI Engineer/i)).toBeInTheDocument();
   });
 
-  it('leaves ask mode on Escape (command autocomplete works again)', async () => {
+  it('dismisses a routed command offer when the user keeps typing instead', async () => {
+    askAnswer.mockResolvedValue({ kind: 'command', command: 'about' });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
     const input = screen.getByRole('textbox');
-    await user.type(input, 'ask{Enter}');
-    await screen.findByText(/ask me anything/i);
-    await user.keyboard('{Escape}');
-    await user.type(input, 'he');
-    expect(await screen.findByText('lp')).toBeInTheDocument();
+    await user.type(input, 'who are you{Enter}');
+    expect(await screen.findByText(/looks like you want/i)).toBeInTheDocument();
+
+    // Typing a real command instead of ↵ dismisses the offer and runs that command.
+    await user.type(input, 'links{Enter}');
+    expect(await screen.findByText(/github\.com\/rscalderon/i)).toBeInTheDocument();
+    // `about` was never run (its offer was dismissed, not confirmed).
+    expect(screen.queryByText(/Full-Stack AI Engineer/i)).not.toBeInTheDocument();
   });
 
-  it('disables command autocomplete while in ask mode', async () => {
+  it('shows the load-error line for plain English when the engine fails to load', async () => {
+    askInit.mockRejectedValueOnce(new Error('no webgpu'));
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
     const input = screen.getByRole('textbox');
-    await user.type(input, 'ask{Enter}');
-    await screen.findByText(/ask me anything/i);
-    await user.type(input, 'he');
-    expect(screen.queryByText('lp')).not.toBeInTheDocument();
+    await user.type(input, 'what do you do?{Enter}');
+    expect(await screen.findByText(/Couldn't load the model/i)).toBeInTheDocument();
   });
 });
