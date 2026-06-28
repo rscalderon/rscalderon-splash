@@ -95,22 +95,6 @@ const help: Command = {
   },
 };
 
-/** Roadmap toys: runnable now, but print a teaser until built. */
-function soonCmd(name: string, description: string, teaser: string): Command {
-  return {
-    name,
-    description,
-    soon: true,
-    run: () => [
-      [
-        { text: `${name} `, tone: 'soon' },
-        { text: '— coming soon. ', tone: 'dim' },
-        { text: teaser, tone: 'normal' },
-      ],
-    ],
-  };
-}
-
 const travel: Command = {
   name: 'travel',
   description: "places I've visited",

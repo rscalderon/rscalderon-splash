@@ -32,11 +32,11 @@ describe('core commands', () => {
     expect(flat.some((s) => s.href === 'https://github.com/rscalderon')).toBe(true);
   });
 
-  it('help groups core and coming-soon commands', () => {
+  it('help lists the live commands', () => {
     const text = byName('help').run(makeCtx(), []).flat().map((s) => s.text).join('\n');
     expect(text).toContain('about');
-    expect(text).toContain('coming soon');
     expect(text).toContain('travel');
+    expect(text).toContain('game');
   });
 
   it('theme toggles via ctx and reports the new theme', () => {
