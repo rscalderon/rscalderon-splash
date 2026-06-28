@@ -6,17 +6,15 @@ import {
   REGISTRY,
   COMMAND_META,
   runCommand,
+  parseInput,
   suggestCompletion,
   type CommandContext,
   type Line,
 } from '@/lib/commands';
 import { applyTheme, persistTheme, currentTheme } from '@/lib/theme';
-import type { AskEngine } from '@/lib/ask/engine';
+import type { AskEngine, AskResult } from '@/lib/ask/engine';
 
-type Mode = 'command' | 'ask';
-type HistoryEntry =
-  | { kind: 'input'; text: string; prompt?: Mode }
-  | { kind: 'output'; line: Line };
+type HistoryEntry = { kind: 'input'; text: string } | { kind: 'output'; line: Line };
 
 const COMMAND_NAMES = COMMAND_META.map((c) => c.name);
 
@@ -27,22 +25,13 @@ const toneClass: Record<string, string> = {
   soon: 'text-purple-300',
 };
 
-const ASK_READY = "ready — ask me anything about Rodrigo. Type 'exit' to leave.";
 const ASK_NOMATCH =
   "I don't have a curated answer for that — try asking about my work, background, or how to reach me (or run 'help').";
 const ASK_ERROR =
   "Couldn't load the model (network or unsupported browser). Try 'about' or 'links' instead.";
 
 /** Colored prompt label, shared by the live input and echoed history lines. */
-function PromptInner({ mode }: { mode: Mode }) {
-  if (mode === 'ask') {
-    return (
-      <>
-        <span className="text-amber-300">ask</span>
-        <span className="text-zinc-500"> › </span>
-      </>
-    );
-  }
+function PromptInner() {
   return (
     <>
       <span className="text-emerald-400">rsc</span>
@@ -55,20 +44,25 @@ function PromptInner({ mode }: { mode: Mode }) {
 
 export default function Terminal({ onClose, seed = '' }: { onClose: () => void; seed?: string }) {
   const [history, setHistory] = useState<HistoryEntry[]>([
-    { kind: 'output', line: [{ text: "Type 'help' to see what it can do.", tone: 'dim' }] },
+    {
+      kind: 'output',
+      line: [{ text: "Type 'help' for commands — or just ask in plain English.", tone: 'dim' }],
+    },
   ]);
   const [value, setValue] = useState(seed);
-  const [mode, setMode] = useState<Mode>('command');
   const [askStatus, setAskStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [loadPct, setLoadPct] = useState(0);
-  const suggestion = useMemo(
-    () => (mode === 'command' ? suggestCompletion(value, COMMAND_NAMES) : null),
-    [value, mode],
-  );
+  // A command the router guessed from free text, awaiting a bare ↵ to confirm.
+  const [pending, setPending] = useState<string | null>(null);
+  // Whether plain-English input is queued waiting on the model (drives the
+  // visible "loading model…" indicator — `pendingRef` is a ref and won't
+  // re-render on its own).
+  const [waiting, setWaiting] = useState(false);
+  const suggestion = useMemo(() => suggestCompletion(value, COMMAND_NAMES), [value]);
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<AskEngine | null>(null);
-  // Questions typed while the model is still loading — answered, in order, once ready.
+  // Plain-English input typed while the model is still loading — answered, in order, once ready.
   const pendingRef = useRef<string[]>([]);
 
   const pushOutput = useCallback((...lines: Line[]) => {
@@ -76,17 +70,21 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
   }, []);
 
   // Prefetch the model the moment the terminal opens — but never before (this
-  // component only mounts when the terminal is opened). By the time the user
-  // types `ask` the model is usually ready; if not, ask-mode shows the loading
-  // bar and keeps whatever they type.
+  // component only mounts when the terminal is opened). Unknown free text typed
+  // before it's ready is queued and answered the instant it settles.
   useEffect(() => {
     let cancelled = false;
+    let engine: AskEngine | null = null;
     setAskStatus('loading');
     setLoadPct(0);
     (async () => {
       try {
-        const { createAskEngine } = await import('@/lib/ask/engine');
-        const engine = createAskEngine();
+        const [{ createWorkerAskEngine }, { spawnAskWorker }] = await Promise.all([
+          import('@/lib/ask/worker-engine'),
+          import('@/lib/ask/spawn'),
+        ]);
+        if (cancelled) return; // unmounted mid-import — don't spawn an orphan worker
+        engine = createWorkerAskEngine(spawnAskWorker);
         await engine.init((pct) => {
           if (!cancelled) setLoadPct(pct);
         });
@@ -99,16 +97,10 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     })();
     return () => {
       cancelled = true;
+      engine?.dispose?.(); // terminate the worker (frees the loaded model) on close
+      engineRef.current = null;
     };
   }, []);
-
-  const enterAsk = useCallback(() => {
-    if (askStatus === 'error') {
-      pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
-      return;
-    }
-    setMode('ask');
-  }, [askStatus, pushOutput]);
 
   const ctx: CommandContext = useMemo(
     () => ({
@@ -120,10 +112,9 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
         persistTheme(t);
       },
       clear: () => setHistory([]),
-      enterAsk: () => enterAsk(),
       open: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
     }),
-    [enterAsk],
+    [],
   );
 
   useEffect(() => {
@@ -135,72 +126,117 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
   }, [history, askStatus, loadPct]);
 
-  const runAsk = useCallback(
-    async (question: string) => {
-      const engine = engineRef.current;
-      if (!engine) return;
-      const res = await engine.answer(question);
-      pushOutput(res.kind === 'answer' ? [{ text: res.text }] : [{ text: ASK_NOMATCH, tone: 'dim' }]);
+  // Offer (don't auto-run) a router-guessed command, so a fuzzy match never
+  // silently fires a side effect. A bare ↵ on the next line confirms it.
+  const offerCommand = useCallback(
+    (name: string) => {
+      setPending(name);
+      const meta = COMMAND_META.find((c) => c.name === name);
+      pushOutput([
+        { text: 'looks like you want ', tone: 'dim' },
+        { text: name, tone: 'accent' },
+        { text: meta ? ` — ${meta.description}.` : '.', tone: 'dim' },
+        { text: '  press ↵ to run, or keep typing.', tone: 'dim' },
+      ]);
     },
     [pushOutput],
   );
 
-  // When the engine settles while we're in ask-mode: show the ready hint, flush
-  // any questions kept during loading (in order), or surface a load error.
+  const present = useCallback(
+    (res: AskResult) => {
+      if (res.kind === 'answer') pushOutput([{ text: res.text }]);
+      else if (res.kind === 'command') offerCommand(res.command);
+      else pushOutput([{ text: ASK_NOMATCH, tone: 'dim' }]);
+    },
+    [pushOutput, offerCommand],
+  );
+
+  const runAsk = useCallback(
+    async (question: string) => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      try {
+        present(await engine.answer(question));
+      } catch {
+        // The worker crashed or was disposed mid-question — fail gracefully
+        // rather than leaving an unhandled rejection.
+        pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
+      }
+    },
+    [present, pushOutput],
+  );
+
+  // Echo and run a command by name (used when the user confirms a router guess).
+  const runByName = useCallback(
+    (name: string) => {
+      setHistory((h) => [...h, { kind: 'input', text: name }]);
+      const out = runCommand(REGISTRY, name, ctx);
+      if (out.length) pushOutput(...out);
+    },
+    [pushOutput, ctx],
+  );
+
+  // When the engine settles: flush any plain-English input kept during loading
+  // (in order), or surface a load error. Readiness itself is silent — the
+  // queued item simply gets answered.
   useEffect(() => {
-    if (mode !== 'ask') return;
     if (askStatus === 'error') {
+      const had = pendingRef.current.length;
       pendingRef.current = [];
-      setMode('command');
-      pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
+      setWaiting(false);
+      if (had) pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
       return;
     }
     if (askStatus !== 'ready') return;
     const queued = pendingRef.current;
+    if (!queued.length) return;
     pendingRef.current = [];
-    if (queued.length === 0) {
-      pushOutput([{ text: ASK_READY, tone: 'dim' }]);
-      return;
-    }
+    setWaiting(false);
     let chain = Promise.resolve();
     for (const q of queued) chain = chain.then(() => runAsk(q));
-  }, [mode, askStatus, runAsk, pushOutput]);
+  }, [askStatus, runAsk, pushOutput]);
 
   const submit = useCallback(() => {
     const raw = value;
     setValue('');
 
-    if (mode === 'ask') {
-      const trimmed = raw.trim();
-      if (!trimmed) return;
-      const lower = trimmed.toLowerCase();
-      if (lower === 'exit' || lower === 'quit') {
-        pendingRef.current = [];
-        setHistory((h) => [...h, { kind: 'input', text: raw, prompt: 'ask' }]);
-        setMode('command');
+    // A router guess is on offer: a bare ↵ confirms it; anything else dismisses
+    // it and falls through to be handled normally.
+    if (pending) {
+      const name = pending;
+      setPending(null);
+      if (!raw.trim()) {
+        runByName(name);
         return;
       }
-      if (lower === 'clear') {
-        pendingRef.current = [];
-        setHistory([]);
-        return;
-      }
-      // Always echo the question so it's visible immediately and never lost.
-      setHistory((h) => [...h, { kind: 'input', text: raw, prompt: 'ask' }]);
-      if (askStatus === 'ready') {
-        void runAsk(trimmed);
-      } else {
-        pendingRef.current.push(trimmed); // model still loading — keep it for when it's ready
+    }
+
+    const { name } = parseInput(raw);
+    if (!name) return; // bare ↵ — no echo, no output
+    // Always echo the input so it's visible immediately and never lost.
+    setHistory((h) => [...h, { kind: 'input', text: raw }]);
+
+    // Known command → run it (exact name always wins over the router; instant).
+    if (REGISTRY.has(name)) {
+      const out = runCommand(REGISTRY, raw, ctx);
+      if (out.length) {
+        setHistory((h) => [...h, ...out.map((line) => ({ kind: 'output' as const, line }))]);
       }
       return;
     }
 
-    setHistory((h) => [...h, { kind: 'input', text: raw }]);
-    const out = runCommand(REGISTRY, raw, ctx);
-    if (out.length) {
-      setHistory((h) => [...h, ...out.map((line) => ({ kind: 'output' as const, line }))]);
+    // Unknown command → smart fallback: route free text to an answer or a
+    // command guess. While the model is still loading, KEEP the input and
+    // answer it once ready (never a dead-end "command not found").
+    if (askStatus === 'ready' && engineRef.current) {
+      void runAsk(raw);
+    } else if (askStatus === 'error') {
+      pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
+    } else {
+      pendingRef.current.push(raw);
+      setWaiting(true);
     }
-  }, [value, mode, askStatus, ctx, runAsk]);
+  }, [value, pending, askStatus, ctx, runAsk, runByName, pushOutput]);
 
   return (
     <div
@@ -237,7 +273,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
           {history.map((entry, i) =>
             entry.kind === 'input' ? (
               <div key={i} className="whitespace-pre-wrap break-words">
-                <PromptInner mode={entry.prompt ?? 'command'} />
+                <PromptInner />
                 {entry.text}
               </div>
             ) : (
@@ -263,7 +299,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
             ),
           )}
 
-          {mode === 'ask' && askStatus === 'loading' && (
+          {waiting && askStatus === 'loading' && (
             <div className="whitespace-pre-wrap break-words text-zinc-500">
               loading model… {loadPct}%
             </div>
@@ -271,7 +307,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
 
           <div className="flex items-baseline">
             <span className="shrink-0 whitespace-pre">
-              <PromptInner mode={mode} />
+              <PromptInner />
             </span>
             <div className="relative flex-1">
               {suggestion && (
@@ -290,14 +326,6 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     submit();
-                    return;
-                  }
-                  if (e.key === 'Escape' && mode === 'ask') {
-                    // Leave ask-mode instead of closing the whole terminal.
-                    e.preventDefault();
-                    e.nativeEvent.stopImmediatePropagation();
-                    pendingRef.current = [];
-                    setMode('command');
                     return;
                   }
                   if (!suggestion) return;
