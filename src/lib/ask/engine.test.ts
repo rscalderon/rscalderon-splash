@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createAskEngine, readDownloadProgress, type Embedder } from './engine';
 import type { Entry } from './knowledge';
+import type { CommandIntent } from './intents';
 
 const VECS: Record<string, number[]> = {
   cat: [1, 0, 0, 0],
   dog: [0, 1, 0, 0],
+  visit: [0, 0, 1, 0], // routes the travel intent
 };
 
 function fakeEmbedder(): Embedder {
@@ -20,8 +22,15 @@ const entries: Entry[] = [
   { id: 'dog', questions: ['tell me about the dog'], answer: 'Woof.' },
 ];
 
+const intents: CommandIntent[] = [{ command: 'travel', phrases: ['places I have visited'] }];
+
 function makeEngine() {
-  return createAskEngine({ entries, threshold: 0.45, loadEmbedder: async () => fakeEmbedder() });
+  return createAskEngine({
+    entries,
+    intents,
+    threshold: 0.45,
+    loadEmbedder: async () => fakeEmbedder(),
+  });
 }
 
 describe('ask engine', () => {
@@ -30,6 +39,12 @@ describe('ask engine', () => {
     await engine.init();
     expect(await engine.answer('what about the cat?')).toEqual({ kind: 'answer', text: 'Meow.' });
     expect(await engine.answer('the dog please')).toEqual({ kind: 'answer', text: 'Woof.' });
+  });
+
+  it('routes a matching intent phrase to its command', async () => {
+    const engine = makeEngine();
+    await engine.init();
+    expect(await engine.answer('the places you visit')).toEqual({ kind: 'command', command: 'travel' });
   });
 
   it('returns nomatch when nothing is similar enough', async () => {
