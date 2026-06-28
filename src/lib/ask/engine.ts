@@ -17,6 +17,8 @@ export interface AskEngine {
   init(onProgress?: (pct: number) => void): Promise<void>;
   /** Embed the question and return the closest curated answer, or a no-match. */
   answer(question: string): Promise<AskResult>;
+  /** Release resources (e.g. terminate the worker). Optional — the in-process engine has nothing to free. */
+  dispose?(): void;
 }
 
 export type CreateOpts = {

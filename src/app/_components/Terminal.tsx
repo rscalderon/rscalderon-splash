@@ -74,12 +74,17 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
   // before it's ready is queued and answered the instant it settles.
   useEffect(() => {
     let cancelled = false;
+    let engine: AskEngine | null = null;
     setAskStatus('loading');
     setLoadPct(0);
     (async () => {
       try {
-        const { createAskEngine } = await import('@/lib/ask/engine');
-        const engine = createAskEngine();
+        const [{ createWorkerAskEngine }, { spawnAskWorker }] = await Promise.all([
+          import('@/lib/ask/worker-engine'),
+          import('@/lib/ask/spawn'),
+        ]);
+        if (cancelled) return; // unmounted mid-import — don't spawn an orphan worker
+        engine = createWorkerAskEngine(spawnAskWorker);
         await engine.init((pct) => {
           if (!cancelled) setLoadPct(pct);
         });
@@ -92,6 +97,8 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     })();
     return () => {
       cancelled = true;
+      engine?.dispose?.(); // terminate the worker (frees the loaded model) on close
+      engineRef.current = null;
     };
   }, []);
 
@@ -148,9 +155,15 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
     async (question: string) => {
       const engine = engineRef.current;
       if (!engine) return;
-      present(await engine.answer(question));
+      try {
+        present(await engine.answer(question));
+      } catch {
+        // The worker crashed or was disposed mid-question — fail gracefully
+        // rather than leaving an unhandled rejection.
+        pushOutput([{ text: ASK_ERROR, tone: 'dim' }]);
+      }
     },
-    [present],
+    [present, pushOutput],
   );
 
   // Echo and run a command by name (used when the user confirms a router guess).

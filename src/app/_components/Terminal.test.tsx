@@ -3,17 +3,25 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Terminal from './Terminal';
 
-// Mock the lazy ask-engine chunk: no model download in jsdom.
-// `askInit` is controllable so tests can hold the model in a "still loading" state.
-const { askAnswer, askInit } = vi.hoisted(() => ({
+// Terminal builds its engine from the worker proxy (`createWorkerAskEngine`) fed
+// the worker spawner (`spawnAskWorker`). Mock both so tests exercise the real
+// Terminal logic against a controllable fake engine — no Web Worker, no model
+// download in jsdom. `askInit` is controllable so tests can hold the model in a
+// "still loading" state.
+const { askAnswer, askInit, askDispose } = vi.hoisted(() => ({
   askAnswer: vi.fn(),
   askInit: vi.fn(() => Promise.resolve()),
+  askDispose: vi.fn(),
 }));
-vi.mock('@/lib/ask/engine', () => ({
-  createAskEngine: () => ({
+vi.mock('@/lib/ask/worker-engine', () => ({
+  createWorkerAskEngine: () => ({
     init: askInit,
     answer: askAnswer,
+    dispose: askDispose,
   }),
+}));
+vi.mock('@/lib/ask/spawn', () => ({
+  spawnAskWorker: () => ({}),
 }));
 
 describe('Terminal', () => {
