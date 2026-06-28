@@ -105,14 +105,6 @@ const travel: Command = {
     ],
   ],
 };
-const ask: Command = {
-  name: 'ask',
-  description: 'ask about me',
-  run: (ctx) => {
-    ctx.enterAsk();
-    return [];
-  },
-};
 const game: Command = {
   name: 'game',
   description: 'explore my work',
@@ -136,6 +128,5 @@ export const coreCommands: Command[] = [
   theme,
   clear,
   travel,
-  ask,
   game,
 ];
