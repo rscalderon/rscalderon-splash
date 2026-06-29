@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Globe, { type GlobeMarker, type GlobeArc } from './Globe';
+import Globe, { type GlobeMarker } from './Globe';
 import { PLACES } from '@/constants/travel';
-import { getTally, focusAngles, buildArcs, type FocusAngles } from '@/lib/travel';
+import { getTally, focusAngles, type FocusAngles } from '@/lib/travel';
 import { prefersReducedMotion } from '@/lib/motion';
 
 const TALLY = getTally(PLACES);
@@ -11,26 +11,12 @@ const TALLY = getTally(PLACES);
 // Warm red so home (Miami) reads clearly distinct from the orange destination
 // markers (which fall back to the global markerColor) on both themes.
 const HOME_COLOR: [number, number, number] = [0.95, 0.2, 0.1];
-// The selected route pops against the faint global arcColor. Starting value.
-const SELECTED_ARC_COLOR: [number, number, number] = [1.0, 0.6, 0.2];
 
 const MARKERS: GlobeMarker[] = PLACES.map((p) => ({
   location: [p.lat, p.lng],
   size: p.home ? 0.1 : 0.045,
   ...(p.home ? { color: HOME_COLOR } : {}),
 }));
-
-// Index of each arc in BASE_ARCS by the PLACES index it terminates at, so a
-// selection can emphasize exactly that route. buildArcs skips home, so the
-// arc list is offset from PLACES — this map bridges the two.
-const BASE_ARCS: GlobeArc[] = buildArcs(PLACES);
-const ARC_INDEX_BY_PLACE: Record<number, number> = {};
-{
-  let a = 0;
-  PLACES.forEach((p, i) => {
-    if (!p.home) ARC_INDEX_BY_PLACE[i] = a++;
-  });
-}
 
 function useCountUp(target: number, durationMs = 900): number {
   const [value, setValue] = useState(0);
@@ -56,15 +42,6 @@ function useCountUp(target: number, durationMs = 900): number {
 export default function GlobeExplorer() {
   const [selected, setSelected] = useState<number | null>(null);
   const focus: FocusAngles | null = selected === null ? null : focusAngles(PLACES[selected]);
-
-  // Every arc stays faint (global arcColor) except the selected non-home route,
-  // which gets an emphasized per-arc color. cobe has no per-arc width/height, so
-  // color is the only emphasis lever.
-  const selectedArc = selected === null ? undefined : ARC_INDEX_BY_PLACE[selected];
-  const arcs: GlobeArc[] =
-    selectedArc === undefined
-      ? BASE_ARCS
-      : BASE_ARCS.map((arc, i) => (i === selectedArc ? { ...arc, color: SELECTED_ARC_COLOR } : arc));
 
   const places = useCountUp(TALLY.places);
   const countries = useCountUp(TALLY.countries);
@@ -94,7 +71,7 @@ export default function GlobeExplorer() {
       </header>
 
       <div className="flex w-full flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
-        <Globe markers={MARKERS} arcs={arcs} focus={focus} />
+        <Globe markers={MARKERS} focus={focus} />
 
         <ul className="grid w-full max-w-[440px] grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3 md:max-w-[280px] md:grid-cols-1">
           {PLACES.map((p, i) => (
