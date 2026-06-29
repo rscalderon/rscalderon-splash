@@ -39,6 +39,20 @@ describe('Terminal', () => {
     expect(await screen.findByText(/Full-Stack AI Engineer/i)).toBeInTheDocument();
   });
 
+  it('renders terminal links with target=_blank so the splash page stays open', async () => {
+    // Even an internal route (/game) must open in a new tab — the whole point is
+    // the visitor never navigates away from the terminal and forgets about it.
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    const input = screen.getByRole('textbox');
+    await user.type(input, 'game{Enter}');
+    const link = await screen.findByRole('link', { name: /open \/game/i });
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    openSpy.mockRestore();
+  });
+
   it('clears output when the clear command runs', async () => {
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
