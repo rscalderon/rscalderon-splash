@@ -29,10 +29,6 @@ export const commandIntents: CommandIntent[] = [
     phrases: ['where can I find you online', 'your social media', 'linkedin and github', 'how do I follow you'],
   },
   {
-    command: 'writing',
-    phrases: ['read your writing', 'take me to your blog', 'show me your essays', 'where are your articles'],
-  },
-  {
     command: 'contact',
     phrases: ['how do I get in touch', 'show me your contact details', 'save your contact card', 'send you a message'],
   },

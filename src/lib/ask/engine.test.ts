@@ -4,22 +4,28 @@ import type { Entry } from './knowledge';
 import type { CommandIntent } from './intents';
 
 const VECS: Record<string, number[]> = {
-  cat: [1, 0, 0, 0],
-  dog: [0, 1, 0, 0],
-  visit: [0, 0, 1, 0], // routes the travel intent
+  cat: [1, 0, 0, 0, 0],
+  dog: [0, 1, 0, 0, 0],
+  visit: [0, 0, 1, 0, 0], // routes the travel intent
+  essay: [0, 0, 0, 1, 0], // matches the rich (linked) answer entry
 };
 
 function fakeEmbedder(): Embedder {
   return async (text: string) => {
     const t = text.toLowerCase();
     const key = Object.keys(VECS).find((k) => t.includes(k));
-    return new Float32Array(key ? VECS[key] : [0, 0, 0, 1]); // unknown → orthogonal to all topics
+    return new Float32Array(key ? VECS[key] : [0, 0, 0, 0, 1]); // unknown → orthogonal to all topics
   };
 }
 
 const entries: Entry[] = [
   { id: 'cat', questions: ['tell me about the cat'], answer: 'Meow.' },
   { id: 'dog', questions: ['tell me about the dog'], answer: 'Woof.' },
+  {
+    id: 'rich',
+    questions: ['show me the essay'],
+    answer: [{ text: 'Read it ' }, { text: 'here', href: 'https://example.test' }],
+  },
 ];
 
 const intents: CommandIntent[] = [{ command: 'travel', phrases: ['places I have visited'] }];
@@ -37,8 +43,17 @@ describe('ask engine', () => {
   it('returns the curated answer for a matching question', async () => {
     const engine = makeEngine();
     await engine.init();
-    expect(await engine.answer('what about the cat?')).toEqual({ kind: 'answer', text: 'Meow.' });
-    expect(await engine.answer('the dog please')).toEqual({ kind: 'answer', text: 'Woof.' });
+    expect(await engine.answer('what about the cat?')).toEqual({ kind: 'answer', line: [{ text: 'Meow.' }] });
+    expect(await engine.answer('the dog please')).toEqual({ kind: 'answer', line: [{ text: 'Woof.' }] });
+  });
+
+  it('returns a pre-built line answer (segments with a link) unchanged', async () => {
+    const engine = makeEngine();
+    await engine.init();
+    expect(await engine.answer('the essay please')).toEqual({
+      kind: 'answer',
+      line: [{ text: 'Read it ' }, { text: 'here', href: 'https://example.test' }],
+    });
   });
 
   it('routes a matching intent phrase to its command', async () => {

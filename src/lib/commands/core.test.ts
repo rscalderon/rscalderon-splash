@@ -31,12 +31,22 @@ describe('core commands', () => {
     expect(flat.some((s) => s.href === 'https://github.com/rscalderon')).toBe(true);
   });
 
-  it('help lists the live commands but not the removed ask command', () => {
+  it('help lists the live commands but not the removed ask or writing commands', () => {
     const text = byName('help').run(makeCtx(), []).flat().map((s) => s.text).join('\n');
     expect(text).toContain('about');
     expect(text).toContain('travel');
     expect(text).toContain('game');
     expect(text).not.toContain('ask');
+    expect(text).not.toContain('writing');
+  });
+
+  it('lists the help commands in alphabetical order', () => {
+    const names = byName('help')
+      .run(makeCtx(), [])
+      .filter((l) => l[0]?.tone === 'accent')
+      .map((l) => l[0].text.trim());
+    expect(names.length).toBeGreaterThan(1);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
 
   it('theme toggles via ctx and reports the new theme', () => {
@@ -68,6 +78,10 @@ describe('core commands', () => {
     expect(coreCommands.some((c) => c.name === 'ask')).toBe(false);
   });
 
+  it('no longer registers the writing command (decluttered; no essays yet)', () => {
+    expect(coreCommands.some((c) => c.name === 'writing')).toBe(false);
+  });
+
   it('travel opens /places/visited in a new tab with a clickable fallback', () => {
     const open = vi.fn();
     const travel = byName('travel');
@@ -84,16 +98,6 @@ describe('core commands', () => {
     const segments = byName('contact').run(makeCtx({ open }), []).flat();
     expect(open).toHaveBeenCalledWith('/contact-info');
     const link = segments.find((s) => s.href === '/contact-info');
-    expect(link?.text).toBe('click here');
-    expect(link?.tone).toBe('accent');
-  });
-
-  it('writing opens my Medium essays in a new tab with a clickable fallback', () => {
-    const open = vi.fn();
-    const medium = { label: 'Medium', href: 'https://medium.com/@samourcalderon', handle: '@samourcalderon' };
-    const segments = byName('writing').run(makeCtx({ open, links: [medium] }), []).flat();
-    expect(open).toHaveBeenCalledWith(medium.href);
-    const link = segments.find((s) => s.href === medium.href);
     expect(link?.text).toBe('click here');
     expect(link?.tone).toBe('accent');
   });
