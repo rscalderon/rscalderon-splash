@@ -7,7 +7,6 @@ import { prefersReducedMotion } from '@/lib/motion';
 import type { FocusAngles } from '@/lib/travel';
 
 export type GlobeMarker = { location: [number, number]; size: number; color?: [number, number, number] };
-export type GlobeArc = { from: [number, number]; to: [number, number]; color?: [number, number, number] };
 
 type ThemeColors = {
   dark: number;
@@ -15,26 +14,19 @@ type ThemeColors = {
   markerColor: [number, number, number];
   glowColor: [number, number, number];
   mapBrightness: number;
-  // Global fallback for un-emphasized arcs — kept low-contrast so the web of
-  // routes reads as subtle. Per-arc `color` (the selected route) overrides it.
-  arcColor: [number, number, number];
-  arcWidth: number;
-  arcHeight: number;
 };
 
 // Starting values — calibrated visually afterward. Tweak freely.
 const COLORS: Record<'light' | 'dark', ThemeColors> = {
-  light: { dark: 0, baseColor: [0.62, 0.62, 0.6], markerColor: [0.86, 0.55, 0.1], glowColor: [1, 1, 1], mapBrightness: 1.1, arcColor: [0.72, 0.72, 0.7], arcWidth: 0.5, arcHeight: 0.4 },
-  dark: { dark: 1, baseColor: [0.26, 0.26, 0.29], markerColor: [0.92, 0.6, 0.14], glowColor: [0.06, 0.06, 0.08], mapBrightness: 5, arcColor: [0.4, 0.4, 0.46], arcWidth: 0.5, arcHeight: 0.4 },
+  light: { dark: 0, baseColor: [0.62, 0.62, 0.6], markerColor: [0.86, 0.55, 0.1], glowColor: [1, 1, 1], mapBrightness: 1.1 },
+  dark: { dark: 1, baseColor: [0.26, 0.26, 0.29], markerColor: [0.92, 0.6, 0.14], glowColor: [0.06, 0.06, 0.08], mapBrightness: 5 },
 };
 
 export default function Globe({
   markers,
-  arcs = [],
   focus,
 }: {
   markers: GlobeMarker[];
-  arcs?: GlobeArc[];
   focus: FocusAngles | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,12 +37,10 @@ export default function Globe({
   const pointerMovement = useRef(0);
   const focusRef = useRef<FocusAngles | null>(focus);
   focusRef.current = focus;
-  // Latest markers/arcs fed through update() each frame so selection changes
-  // re-skin the routes without recreating the globe.
+  // Latest markers fed through update() each frame so selection changes apply
+  // without recreating the globe.
   const markersRef = useRef<GlobeMarker[]>(markers);
   markersRef.current = markers;
-  const arcsRef = useRef<GlobeArc[]>(arcs);
-  arcsRef.current = arcs;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -85,7 +75,6 @@ export default function Globe({
         width: width.current * 2,
         height: width.current * 2,
         markers: markersRef.current,
-        arcs: arcsRef.current,
       });
       rafId = requestAnimationFrame(tick);
     };
@@ -114,11 +103,7 @@ export default function Globe({
         baseColor: c.baseColor,
         markerColor: c.markerColor,
         glowColor: c.glowColor,
-        arcColor: c.arcColor,
-        arcWidth: c.arcWidth,
-        arcHeight: c.arcHeight,
         markers: markersRef.current,
-        arcs: arcsRef.current,
       });
       canvasRef.current.style.opacity = '1';
       rafId = requestAnimationFrame(tick);
