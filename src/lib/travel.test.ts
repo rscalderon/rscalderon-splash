@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getTally, uncategorizedCountries, focusAngles } from './travel';
-import { PLACES } from '@/constants/travel';
+import { getTally, uncategorizedCountries, focusAngles, sortedPlaces } from './travel';
+import { PLACES, type Place } from '@/constants/travel';
 
 describe('travel data', () => {
   it('every country maps to a continent', () => {
@@ -26,6 +26,25 @@ describe('travel data', () => {
   it('has exactly one home base, Miami', () => {
     expect(PLACES.filter((p) => p.home)).toHaveLength(1);
     expect(PLACES.find((p) => p.home)?.city).toBe('Miami');
+  });
+
+  it('sorts places alphabetically by city, locale-aware, without mutating input', () => {
+    const input: Place[] = [
+      { city: 'Zürich', country: 'Switzerland', lat: 0, lng: 0 },
+      { city: 'Austin', country: 'USA', lat: 0, lng: 0 },
+      { city: 'Bogotá', country: 'Colombia', lat: 0, lng: 0 },
+    ];
+    const snapshot = input.map((p) => p.city);
+    expect(sortedPlaces(input).map((p) => p.city)).toEqual(['Austin', 'Bogotá', 'Zürich']);
+    expect(input.map((p) => p.city)).toEqual(snapshot); // input untouched
+  });
+
+  it('orders the real PLACES list alphabetically and keeps every place', () => {
+    const out = sortedPlaces(PLACES);
+    expect(out).toHaveLength(PLACES.length);
+    expect(out.map((p) => p.city)).toEqual(
+      PLACES.map((p) => p.city).sort((a, b) => a.localeCompare(b)),
+    );
   });
 
   it('faces lat/lng 0,0 with cobe’s 1.5π front-meridian offset', () => {
