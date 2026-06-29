@@ -3,16 +3,20 @@
 import { useEffect, useState } from 'react';
 import Globe, { type GlobeMarker } from './Globe';
 import { PLACES } from '@/constants/travel';
-import { getTally, focusAngles, type FocusAngles } from '@/lib/travel';
+import { getTally, focusAngles, sortedPlaces, type FocusAngles } from '@/lib/travel';
 import { prefersReducedMotion } from '@/lib/motion';
 
 const TALLY = getTally(PLACES);
+
+// Listed and selected alphabetically. Selection is by index, so this one array
+// must drive the rendered list, the markers, and the focus lookup alike.
+const PLACES_SORTED = sortedPlaces(PLACES);
 
 // Warm red so home (Miami) reads clearly distinct from the orange destination
 // markers (which fall back to the global markerColor) on both themes.
 const HOME_COLOR: [number, number, number] = [0.95, 0.2, 0.1];
 
-const MARKERS: GlobeMarker[] = PLACES.map((p) => ({
+const MARKERS: GlobeMarker[] = PLACES_SORTED.map((p) => ({
   location: [p.lat, p.lng],
   size: p.home ? 0.1 : 0.045,
   ...(p.home ? { color: HOME_COLOR } : {}),
@@ -41,7 +45,7 @@ function useCountUp(target: number, durationMs = 900): number {
 
 export default function GlobeExplorer() {
   const [selected, setSelected] = useState<number | null>(null);
-  const focus: FocusAngles | null = selected === null ? null : focusAngles(PLACES[selected]);
+  const focus: FocusAngles | null = selected === null ? null : focusAngles(PLACES_SORTED[selected]);
 
   const places = useCountUp(TALLY.places);
   const countries = useCountUp(TALLY.countries);
@@ -73,8 +77,8 @@ export default function GlobeExplorer() {
       <div className="flex w-full flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
         <Globe markers={MARKERS} focus={focus} />
 
-        <ul className="grid w-full max-w-[440px] grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3 md:max-w-[280px] md:grid-cols-1">
-          {PLACES.map((p, i) => (
+        <ul className="grid max-h-[55lvh] w-full max-w-[440px] grid-cols-2 gap-x-6 gap-y-1.5 overflow-y-auto [scrollbar-gutter:stable] sm:grid-cols-3 md:max-h-[420px] md:max-w-[280px] md:grid-cols-1">
+          {PLACES_SORTED.map((p, i) => (
             <li key={`${p.city}-${p.country}`}>
               <button
                 type="button"

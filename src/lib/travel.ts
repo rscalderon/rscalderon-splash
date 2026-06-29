@@ -15,6 +15,11 @@ export function uncategorizedCountries(places: Place[] = PLACES): string[] {
   return [...new Set(places.map((p) => p.country))].filter((c) => !CONTINENT_BY_COUNTRY[c]);
 }
 
+/** Places sorted alphabetically by city (locale-aware, so accents sort naturally). Pure — never mutates the input. */
+export function sortedPlaces(places: Place[] = PLACES): Place[] {
+  return [...places].sort((a, b) => a.city.localeCompare(b.city));
+}
+
 export type FocusAngles = { phi: number; theta: number };
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
