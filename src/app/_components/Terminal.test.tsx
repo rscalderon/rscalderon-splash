@@ -47,7 +47,8 @@ describe('Terminal', () => {
     render(<Terminal onClose={vi.fn()} />);
     const input = screen.getByRole('textbox');
     await user.type(input, 'game{Enter}');
-    const link = await screen.findByRole('link', { name: /open \/game/i });
+    const link = await screen.findByRole('link', { name: /click here/i });
+    expect(link).toHaveAttribute('href', '/game');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     openSpy.mockRestore();
