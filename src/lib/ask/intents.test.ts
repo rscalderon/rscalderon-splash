@@ -28,4 +28,8 @@ describe('command intents', () => {
   it('has no ask intent (ask-as-default replaced ask-mode)', () => {
     expect(commandIntents.some((i) => i.command === 'ask')).toBe(false);
   });
+
+  it('has no writing intent (the writing command was removed; essays answer is curated)', () => {
+    expect(commandIntents.some((i) => i.command === 'writing')).toBe(false);
+  });
 });

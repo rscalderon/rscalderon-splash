@@ -1,11 +1,21 @@
+import type { Line } from '../commands/types';
+import { links } from '../links';
+
 export type Entry = {
   /** Stable id (used internally for matching + tests). */
   id: string;
   /** Several phrasings of the same question — each is embedded; the best match wins. */
   questions: string[];
-  /** The curated answer, returned verbatim. Plain text, no PII. */
-  answer: string;
+  /**
+   * The curated answer. A plain string for most entries, or pre-built terminal
+   * segments (a `Line`) when the answer needs a link — e.g. the essays answer
+   * links the word "essays" to Medium. Either way: no PII in the visible text.
+   */
+  answer: string | Line;
 };
+
+/** Resolved once from links.ts so the URL lives in a single place. */
+const MEDIUM_HREF = links.find((l) => l.label === 'Medium')!.href;
 
 /**
  * Cosine-similarity cut-off for "good enough" matches (normalized MiniLM embeddings).
@@ -142,14 +152,25 @@ export const knowledge: Entry[] = [
   },
   {
     id: 'writing',
+    // Both informational ("do you write") and action ("show me your essays")
+    // phrasings live here — the latter used to be a command intent, folded in
+    // now that the `writing` command is gone.
     questions: [
       'do you write',
       'where can I read your writing',
       'do you have a blog',
       'tell me about your essays',
       'do you blog',
+      'read your writing',
+      'take me to your blog',
+      'show me your essays',
+      'where are your articles',
     ],
-    answer: "I write essays on Medium. Run the `writing` command and I'll point you there.",
+    answer: [
+      { text: 'Check out my ' },
+      { text: 'essays', href: MEDIUM_HREF, tone: 'accent' },
+      { text: '.' },
+    ],
   },
   {
     id: 'contact',

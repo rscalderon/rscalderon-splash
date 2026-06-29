@@ -1,4 +1,4 @@
-import type { Command, CommandContext, Line, Tone } from './types';
+import type { Command, CommandContext, CommandMeta, Line, Tone } from './types';
 import { nextTheme } from '../theme';
 
 /** Build a single-segment line. */
@@ -50,10 +50,6 @@ const linksCmd: Command = {
     ]),
 };
 
-const writing = opensTab('writing', 'my essays', 'Opening my writing', (ctx) =>
-  ctx.links.find((l) => l.label === 'Medium')?.href,
-);
-
 const contact = opensTab('contact', 'save my details', 'Opening my contact card', () => '/contact-info');
 
 const theme: Command = {
@@ -80,8 +76,10 @@ const help: Command = {
   description: 'show this list',
   run: (ctx) => {
     const out: Line[] = [];
-    const core = ctx.commands.filter((c) => !c.soon);
-    const soon = ctx.commands.filter((c) => c.soon);
+    // Alphabetical by name within each group, so the list reads predictably.
+    const byName = (a: CommandMeta, b: CommandMeta) => a.name.localeCompare(b.name);
+    const core = ctx.commands.filter((c) => !c.soon).sort(byName);
+    const soon = ctx.commands.filter((c) => c.soon).sort(byName);
     for (const c of core) {
       out.push([
         { text: '  ' + c.name.padEnd(10), tone: 'accent' },
@@ -110,7 +108,6 @@ export const coreCommands: Command[] = [
   help,
   about,
   linksCmd,
-  writing,
   contact,
   theme,
   clear,

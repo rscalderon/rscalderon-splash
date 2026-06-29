@@ -144,7 +144,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
 
   const present = useCallback(
     (res: AskResult) => {
-      if (res.kind === 'answer') pushOutput([{ text: res.text }]);
+      if (res.kind === 'answer') pushOutput(res.line);
       else if (res.kind === 'command') offerCommand(res.command);
       else pushOutput([{ text: ASK_NOMATCH, tone: 'dim' }]);
     },

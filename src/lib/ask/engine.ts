@@ -1,13 +1,17 @@
 import { knowledge, MATCH_THRESHOLD, type Entry } from './knowledge';
 import { commandIntents, type CommandIntent } from './intents';
 import { matchEntry, type IndexItem } from './match';
+import type { Line } from '../commands/types';
 
 const MODEL = 'Xenova/all-MiniLM-L6-v2';
 
 export type AskResult =
-  | { kind: 'answer'; text: string }
+  | { kind: 'answer'; line: Line }
   | { kind: 'command'; command: string }
   | { kind: 'nomatch' };
+
+/** Normalize a curated answer (plain string, or pre-built segments) into a terminal line. */
+const toLine = (answer: string | Line): Line => (typeof answer === 'string' ? [{ text: answer }] : answer);
 
 /** Turns text into a normalized embedding vector. */
 export type Embedder = (text: string) => Promise<Float32Array>;
@@ -78,7 +82,7 @@ export function createAskEngine(opts: CreateOpts = {}): AskEngine {
   // One id → result map across both pools. Command ids are namespaced (`cmd:…`)
   // so they can never collide with a knowledge entry id.
   const results = new Map<string, AskResult>();
-  for (const e of entries) results.set(e.id, { kind: 'answer', text: e.answer });
+  for (const e of entries) results.set(e.id, { kind: 'answer', line: toLine(e.answer) });
   for (const i of intents) results.set(`cmd:${i.command}`, { kind: 'command', command: i.command });
 
   const index: IndexItem[] = [];
