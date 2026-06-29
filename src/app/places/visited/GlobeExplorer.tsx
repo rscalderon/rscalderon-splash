@@ -52,7 +52,7 @@ export default function GlobeExplorer() {
   const continents = useCountUp(TALLY.continents);
 
   return (
-    <main className="flex w-full max-w-[960px] flex-col items-center gap-10">
+    <main className="flex h-full min-h-0 w-full max-w-[960px] flex-col items-center gap-10 pb-8">
       <header className="flex flex-col items-center gap-4">
         <h1 className="text-xl font-semibold tracking-tight text-[var(--fg)]">Where I&apos;ve traveled</h1>
 
@@ -74,10 +74,10 @@ export default function GlobeExplorer() {
         </dl>
       </header>
 
-      <div className="flex w-full flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
+      <div className="flex w-full min-h-0 flex-1 flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
         <Globe markers={MARKERS} focus={focus} />
 
-        <ul className="grid max-h-[55lvh] w-full max-w-[440px] grid-cols-2 gap-x-6 gap-y-1.5 overflow-y-auto [scrollbar-gutter:stable] sm:grid-cols-3 md:max-h-[420px] md:max-w-[280px] md:grid-cols-1">
+        <ul className="grid min-h-0 w-full max-w-[440px] flex-auto grid-cols-2 gap-x-6 gap-y-1.5 overflow-y-auto [scrollbar-gutter:stable] sm:grid-cols-3 md:h-full md:max-w-[280px] md:flex-none md:grid-cols-1">
           {PLACES_SORTED.map((p, i) => (
             <li key={`${p.city}-${p.country}`}>
               <button
