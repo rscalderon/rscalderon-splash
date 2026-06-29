@@ -1,9 +1,36 @@
-import type { Command, Line, Tone } from './types';
+import type { Command, CommandContext, Line, Tone } from './types';
 import { nextTheme } from '../theme';
 
 /** Build a single-segment line. */
 const line = (text: string, tone?: Tone): Line => [{ text, tone }];
 const blank = (): Line => [{ text: '' }];
+
+/**
+ * Builds a command that opens `url` in a new browser tab and prints a one-line
+ * fallback link, so a blocked popup still leaves something clickable. `resolve`
+ * yields the destination plus the fallback link's visible text; if it returns no
+ * url (e.g. a link that isn't configured) nothing opens, but the line still
+ * renders. Generalises the original `game` behaviour to every nav command.
+ */
+const opensTab = (
+  name: string,
+  description: string,
+  blurb: string,
+  resolve: (ctx: CommandContext) => { url?: string; linkText: string },
+): Command => ({
+  name,
+  description,
+  run: (ctx): Line[] => {
+    const { url, linkText } = resolve(ctx);
+    if (url) ctx.open(url);
+    return [
+      [
+        { text: `${blurb} in a new tab… if blocked, `, tone: 'dim' },
+        { text: linkText, href: url, tone: 'accent' },
+      ],
+    ];
+  },
+});
 
 const about: Command = {
   name: 'about',
@@ -24,30 +51,15 @@ const linksCmd: Command = {
     ]),
 };
 
-const writing: Command = {
-  name: 'writing',
-  description: 'my essays',
-  run: (ctx) => {
-    const medium = ctx.links.find((l) => l.label === 'Medium');
-    return [
-      [
-        { text: 'Read my writing on Medium: ' },
-        { text: medium?.handle ?? '@samourcalderon', href: medium?.href, tone: 'accent' },
-      ],
-    ];
-  },
-};
+const writing = opensTab('writing', 'my essays', 'Opening my writing', (ctx) => {
+  const medium = ctx.links.find((l) => l.label === 'Medium');
+  return { url: medium?.href, linkText: medium?.handle ?? '@samourcalderon' };
+});
 
-const contact: Command = {
-  name: 'contact',
-  description: 'save my details',
-  run: () => [
-    [
-      { text: 'Contact card & vCard download: ' },
-      { text: '/contact-info', href: '/contact-info', tone: 'accent' },
-    ],
-  ],
-};
+const contact = opensTab('contact', 'save my details', 'Opening my contact card', () => ({
+  url: '/contact-info',
+  linkText: 'open /contact-info',
+}));
 
 const theme: Command = {
   name: 'theme',
@@ -95,29 +107,15 @@ const help: Command = {
   },
 };
 
-const travel: Command = {
-  name: 'travel',
-  description: "places I've visited",
-  run: () => [
-    [
-      { text: "Where I've traveled: " },
-      { text: '/places/visited', href: '/places/visited', tone: 'accent' },
-    ],
-  ],
-};
-const game: Command = {
-  name: 'game',
-  description: 'explore my work',
-  run: (ctx) => {
-    ctx.open('/game');
-    return [
-      [
-        { text: 'Launching the planet in a new tab… if blocked, ', tone: 'dim' as Tone },
-        { text: 'open /game', href: '/game', tone: 'accent' as Tone },
-      ],
-    ];
-  },
-};
+const travel = opensTab('travel', "places I've visited", "Opening where I've traveled", () => ({
+  url: '/places/visited',
+  linkText: 'open /places/visited',
+}));
+
+const game = opensTab('game', 'explore my work', 'Launching the planet', () => ({
+  url: '/game',
+  linkText: 'open /game',
+}));
 
 export const coreCommands: Command[] = [
   help,

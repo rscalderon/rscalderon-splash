@@ -283,7 +283,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
                     <a
                       key={j}
                       href={seg.href}
-                      target={seg.href.startsWith('/') ? undefined : '_blank'}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-sky-400 underline underline-offset-2"
                     >

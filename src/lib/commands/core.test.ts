@@ -66,11 +66,33 @@ describe('core commands', () => {
     expect(coreCommands.some((c) => c.name === 'ask')).toBe(false);
   });
 
-  it('travel is a real command that links to /places/visited', () => {
+  it('travel opens /places/visited in a new tab with a clickable fallback', () => {
+    const open = vi.fn();
     const travel = byName('travel');
     expect(travel.soon).toBeFalsy();
-    expect(travel.description).toBe("places I've visited");
-    const segments = travel.run(makeCtx(), []).flat();
+    const segments = travel.run(makeCtx({ open }), []).flat();
+    expect(open).toHaveBeenCalledWith('/places/visited');
     expect(segments.some((s) => s.href === '/places/visited' && s.tone === 'accent')).toBe(true);
+  });
+
+  it('contact opens /contact-info in a new tab with a clickable fallback', () => {
+    const open = vi.fn();
+    const segments = byName('contact').run(makeCtx({ open }), []).flat();
+    expect(open).toHaveBeenCalledWith('/contact-info');
+    expect(segments.some((s) => s.href === '/contact-info' && s.tone === 'accent')).toBe(true);
+  });
+
+  it('writing opens my Medium essays in a new tab with a clickable fallback', () => {
+    const open = vi.fn();
+    const medium = { label: 'Medium', href: 'https://medium.com/@samourcalderon', handle: '@samourcalderon' };
+    const segments = byName('writing').run(makeCtx({ open, links: [medium] }), []).flat();
+    expect(open).toHaveBeenCalledWith(medium.href);
+    expect(segments.some((s) => s.href === medium.href && s.tone === 'accent')).toBe(true);
+  });
+
+  it('links stays a clickable list and does not auto-open a tab', () => {
+    const open = vi.fn();
+    byName('links').run(makeCtx({ open }), []);
+    expect(open).not.toHaveBeenCalled();
   });
 });
