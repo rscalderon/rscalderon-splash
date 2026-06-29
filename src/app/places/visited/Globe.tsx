@@ -131,7 +131,7 @@ export default function Globe({
       ref={canvasRef}
       role="img"
       aria-label="Interactive globe of places I've visited"
-      className="aspect-square w-full max-w-[420px] cursor-grab opacity-0 transition-opacity duration-700 [contain:layout_paint_size]"
+      className="aspect-square w-full max-w-[420px] max-h-full shrink-0 cursor-grab opacity-0 transition-opacity duration-700 [contain:layout_paint_size]"
       onPointerDown={(e) => {
         pointerInteracting.current = e.clientX - pointerMovement.current;
         if (canvasRef.current) canvasRef.current.style.cursor = 'grabbing';
