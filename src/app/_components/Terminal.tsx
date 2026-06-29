@@ -267,7 +267,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
 
         <div
           ref={bodyRef}
-          className="flex-1 cursor-text overflow-auto px-4 py-3.5 font-mono text-[13.5px] leading-relaxed text-zinc-300"
+          className="flex-1 cursor-text overflow-auto px-4 py-3.5 font-mono text-[16px] sm:text-[13.5px] leading-relaxed text-zinc-300"
           onClick={() => inputRef.current?.focus()}
         >
           {history.map((entry, i) =>
@@ -313,7 +313,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
               {suggestion && (
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre font-mono text-[13.5px] leading-relaxed"
+                  className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre font-mono text-[16px] sm:text-[13.5px] leading-relaxed"
                 >
                   <span className="text-transparent">{value}</span>
                   <span className="text-zinc-600">{suggestion}</span>
@@ -341,7 +341,7 @@ export default function Terminal({ onClose, seed = '' }: { onClose: () => void; 
                     }
                   }
                 }}
-                className="relative w-full border-none bg-transparent p-0 font-mono text-[13.5px] leading-relaxed text-zinc-200 caret-emerald-400 outline-none"
+                className="relative w-full border-none bg-transparent p-0 font-mono text-[16px] sm:text-[13.5px] leading-relaxed text-zinc-200 caret-emerald-400 outline-none"
                 autoComplete="off"
                 autoCapitalize="off"
                 spellCheck={false}
