@@ -59,7 +59,9 @@ describe('core commands', () => {
     const out = cmd.run(makeCtx({ open }), []);
     expect(cmd.soon).toBeFalsy();
     expect(open).toHaveBeenCalledWith('/game');
-    expect(out.flat().some((s) => s.href === '/game')).toBe(true);
+    const link = out.flat().find((s) => s.href === '/game');
+    expect(link?.text).toBe('click here');
+    expect(link?.tone).toBe('accent');
   });
 
   it('no longer registers the ask command (ask-as-default replaced it)', () => {
@@ -72,14 +74,18 @@ describe('core commands', () => {
     expect(travel.soon).toBeFalsy();
     const segments = travel.run(makeCtx({ open }), []).flat();
     expect(open).toHaveBeenCalledWith('/places/visited');
-    expect(segments.some((s) => s.href === '/places/visited' && s.tone === 'accent')).toBe(true);
+    const link = segments.find((s) => s.href === '/places/visited');
+    expect(link?.text).toBe('click here');
+    expect(link?.tone).toBe('accent');
   });
 
   it('contact opens /contact-info in a new tab with a clickable fallback', () => {
     const open = vi.fn();
     const segments = byName('contact').run(makeCtx({ open }), []).flat();
     expect(open).toHaveBeenCalledWith('/contact-info');
-    expect(segments.some((s) => s.href === '/contact-info' && s.tone === 'accent')).toBe(true);
+    const link = segments.find((s) => s.href === '/contact-info');
+    expect(link?.text).toBe('click here');
+    expect(link?.tone).toBe('accent');
   });
 
   it('writing opens my Medium essays in a new tab with a clickable fallback', () => {
@@ -87,7 +93,9 @@ describe('core commands', () => {
     const medium = { label: 'Medium', href: 'https://medium.com/@samourcalderon', handle: '@samourcalderon' };
     const segments = byName('writing').run(makeCtx({ open, links: [medium] }), []).flat();
     expect(open).toHaveBeenCalledWith(medium.href);
-    expect(segments.some((s) => s.href === medium.href && s.tone === 'accent')).toBe(true);
+    const link = segments.find((s) => s.href === medium.href);
+    expect(link?.text).toBe('click here');
+    expect(link?.tone).toBe('accent');
   });
 
   it('links stays a clickable list and does not auto-open a tab', () => {
