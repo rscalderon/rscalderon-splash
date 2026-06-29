@@ -16,6 +16,13 @@
   --line: #222226;
 }
 
+/* No rubber-band / overscroll bounce or scroll-chaining, on every page.
+   Set on the root scrolling element — overscroll-behavior doesn't propagate
+   up from <body> to the viewport the way overflow does. */
+html {
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
