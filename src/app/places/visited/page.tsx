@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function GlobePage() {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center p-8">
+    <div className="relative flex h-[100lvh] flex-col items-center justify-center overflow-hidden p-8">
       <GlobeExplorer />
       <Link
         href="/"
