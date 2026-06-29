@@ -73,9 +73,9 @@ describe('createWorkerAskEngine', () => {
 
     // Reply out of order (id 2 first) to prove results route by id, not arrival.
     fake.reply({ type: 'answer-result', id: 2, result: { kind: 'command', command: 'travel' } });
-    fake.reply({ type: 'answer-result', id: 1, result: { kind: 'answer', text: 'Hi.' } });
+    fake.reply({ type: 'answer-result', id: 1, result: { kind: 'answer', line: [{ text: 'Hi.' }] } });
 
-    await expect(a).resolves.toEqual({ kind: 'answer', text: 'Hi.' });
+    await expect(a).resolves.toEqual({ kind: 'answer', line: [{ text: 'Hi.' }] });
     await expect(b).resolves.toEqual({ kind: 'command', command: 'travel' });
   });
 

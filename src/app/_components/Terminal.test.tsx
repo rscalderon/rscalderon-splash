@@ -80,9 +80,9 @@ describe('Terminal', () => {
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
     const input = screen.getByRole('textbox') as HTMLInputElement;
-    await user.type(input, 'wr'); // prefix of "writing"
+    await user.type(input, 'tr'); // prefix of "travel"
     await user.keyboard('{ArrowRight}');
-    expect(input.value).toBe('writing');
+    expect(input.value).toBe('travel');
   });
 
   it('submits the typed text on Enter without auto-accepting the suggestion', async () => {
@@ -113,7 +113,7 @@ describe('Terminal — smart fallback (ask-as-default)', () => {
   });
 
   it('answers plain-English input once the model is ready', async () => {
-    askAnswer.mockResolvedValue({ kind: 'answer', text: 'I build AI products end to end.' });
+    askAnswer.mockResolvedValue({ kind: 'answer', line: [{ text: 'I build AI products end to end.' }] });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
     await waitFor(() => expect(askInit).toHaveBeenCalled());
@@ -121,6 +121,26 @@ describe('Terminal — smart fallback (ask-as-default)', () => {
     await user.type(input, 'what is your background?{Enter}');
     expect(await screen.findByText('I build AI products end to end.')).toBeInTheDocument();
     expect(askAnswer).toHaveBeenCalledWith('what is your background?');
+  });
+
+  it('renders an answer that contains a link as a new-tab anchor (the essays → Medium answer)', async () => {
+    askAnswer.mockResolvedValue({
+      kind: 'answer',
+      line: [
+        { text: 'Check out my ' },
+        { text: 'essays', href: 'https://medium.com/@samourcalderon', tone: 'accent' },
+        { text: '.' },
+      ],
+    });
+    const user = userEvent.setup();
+    render(<Terminal onClose={vi.fn()} />);
+    await waitFor(() => expect(askInit).toHaveBeenCalled());
+    const input = screen.getByRole('textbox');
+    await user.type(input, 'do you write?{Enter}');
+    const link = await screen.findByRole('link', { name: 'essays' });
+    expect(link).toHaveAttribute('href', 'https://medium.com/@samourcalderon');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('shows the honest-redirect line when there is no match', async () => {
@@ -138,7 +158,7 @@ describe('Terminal — smart fallback (ask-as-default)', () => {
   it('keeps plain English typed before the model is ready and answers it once ready', async () => {
     let resolveInit!: () => void;
     askInit.mockImplementationOnce(() => new Promise<void>((r) => (resolveInit = r)));
-    askAnswer.mockResolvedValue({ kind: 'answer', text: 'Deferred answer.' });
+    askAnswer.mockResolvedValue({ kind: 'answer', line: [{ text: 'Deferred answer.' }] });
     const user = userEvent.setup();
     render(<Terminal onClose={vi.fn()} />);
     const input = screen.getByRole('textbox');
