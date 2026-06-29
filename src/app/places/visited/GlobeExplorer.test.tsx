@@ -38,6 +38,13 @@ describe('GlobeExplorer', () => {
     }
   });
 
+  it('renders the places alphabetically by city', () => {
+    render(<GlobeExplorer />);
+    const cities = screen.getAllByRole('button').map((b) => b.textContent!.split(',')[0].trim());
+    expect(cities).toHaveLength(PLACES.length);
+    expect(cities).toEqual([...cities].sort((a, b) => a.localeCompare(b)));
+  });
+
   it('selects a place when clicked', async () => {
     const user = userEvent.setup();
     render(<GlobeExplorer />);
