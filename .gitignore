@@ -47,4 +47,4 @@ next-env.d.ts
 .superpowers/
 
 # agent-generated specs & plans — keep these local, don't commit
-docs/superpowers/
+docs/*
