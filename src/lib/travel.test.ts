@@ -10,8 +10,22 @@ describe('travel data', () => {
   it('computes the headline tally', () => {
     const t = getTally(PLACES);
     expect(t.places).toBe(PLACES.length);
-    expect(t.countries).toBe(15);
+    expect(t.countries).toBe(22);
     expect(t.continents).toBe(4);
+  });
+
+  it('includes the seven newly added countries', () => {
+    const countries = new Set(PLACES.map((p) => p.country));
+    for (const c of ['Costa Rica', 'Nicaragua', 'Honduras', 'Portugal', 'Bahamas', 'Ecuador', 'Singapore']) {
+      expect(countries.has(c)).toBe(true);
+    }
+  });
+
+  it('labels every place with a specific city, never a bare country name', () => {
+    // City-states are the legitimate exception: the city *is* the country.
+    const CITY_STATES = new Set(['Singapore']);
+    const bareCountries = PLACES.filter((p) => p.city === p.country && !CITY_STATES.has(p.country));
+    expect(bareCountries.map((p) => p.city)).toEqual([]);
   });
 
   it('counts unique countries and continents on a fixture', () => {
