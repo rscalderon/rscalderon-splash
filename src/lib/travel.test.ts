@@ -21,6 +21,13 @@ describe('travel data', () => {
     }
   });
 
+  it('includes the eight Thailand islands and beaches', () => {
+    const cities = new Set(PLACES.map((p) => p.city));
+    for (const c of ['Koh Tao', 'Koh Samui', 'Koh Lanta', 'Phuket', 'Krabi', 'Railay Beach', 'Koh Phi Phi', 'Koh Pha Ngan']) {
+      expect(cities.has(c)).toBe(true);
+    }
+  });
+
   it('labels every place with a specific city, never a bare country name', () => {
     // City-states are the legitimate exception: the city *is* the country.
     const CITY_STATES = new Set(['Singapore']);

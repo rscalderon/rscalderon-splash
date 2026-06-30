@@ -79,5 +79,13 @@ export const PLACES: Place[] = [
   { city: 'Dubai', country: 'UAE', lat: 25.2048, lng: 55.2708 },
   { city: 'New Delhi', country: 'India', lat: 28.6139, lng: 77.209 },
   { city: 'Bangkok', country: 'Thailand', lat: 13.7563, lng: 100.5018 },
+  { city: 'Koh Tao', country: 'Thailand', lat: 10.0956, lng: 99.8405 },
+  { city: 'Koh Pha Ngan', country: 'Thailand', lat: 9.7319, lng: 100.029 },
+  { city: 'Koh Samui', country: 'Thailand', lat: 9.512, lng: 100.0136 },
+  { city: 'Phuket', country: 'Thailand', lat: 7.8804, lng: 98.3923 },
+  { city: 'Krabi', country: 'Thailand', lat: 8.0863, lng: 98.9063 },
+  { city: 'Railay Beach', country: 'Thailand', lat: 8.0114, lng: 98.8377 },
+  { city: 'Koh Phi Phi', country: 'Thailand', lat: 7.7407, lng: 98.7784 },
+  { city: 'Koh Lanta', country: 'Thailand', lat: 7.6167, lng: 99.0833 },
   { city: 'Singapore', country: 'Singapore', lat: 1.3521, lng: 103.8198 },
 ];
