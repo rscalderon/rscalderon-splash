@@ -1,0 +1,11 @@
+#!/bin/sh
+# Ensure rscalderon is credited as co-author on every commit.
+# Enabled via `git config core.hooksPath .githooks` (run automatically by the
+# package.json "prepare" script on install).
+
+MSG_FILE="$1"
+
+git interpret-trailers --in-place \
+  --if-exists addIfDifferent \
+  --trailer "Co-Authored-By: rscalderon <127636148+rscalderon@users.noreply.github.com>" \
+  "$MSG_FILE"
